@@ -9,6 +9,7 @@
 namespace Fixtures.AcceptanceTestsHeader
 {
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
@@ -77,7 +78,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamExistingKey", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/existingkey").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/existingkey").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -166,7 +167,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseExistingKey", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/existingkey").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/existingkey").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -255,7 +256,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamProtectedKey", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/protectedkey").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/protectedkey").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -344,7 +345,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseProtectedKey", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/protectedkey").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/protectedkey").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -442,7 +443,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamInteger", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/integer").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/integer").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -547,7 +548,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseInteger", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/integer").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/integer").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -653,7 +654,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamLong", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/long").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/long").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -758,7 +759,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseLong", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/long").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/long").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -864,7 +865,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamFloat", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/float").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/float").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -969,7 +970,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseFloat", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/float").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/float").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1075,7 +1076,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamDouble", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/double").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/double").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1180,7 +1181,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseDouble", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/double").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/double").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1286,7 +1287,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamBool", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/bool").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/bool").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1391,7 +1392,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseBool", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/bool").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/bool").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1496,7 +1497,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamString", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/string").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/string").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1603,7 +1604,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseString", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/string").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/string").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1709,7 +1710,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamDate", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/date").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/date").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1814,7 +1815,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseDate", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/date").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/date").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1922,7 +1923,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamDatetime", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/datetime").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/datetime").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -2028,7 +2029,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseDatetime", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/datetime").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/datetime").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -2134,7 +2135,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamByte", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/byte").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/byte").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -2239,7 +2240,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseByte", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/byte").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/byte").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -2343,7 +2344,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ParamEnum", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/param/prim/enum").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/param/prim/enum").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -2449,7 +2450,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "ResponseEnum", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/response/prim/enum").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/response/prim/enum").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -2539,7 +2540,7 @@ namespace Fixtures.AcceptanceTestsHeader
                 ServiceClientTracing.Enter(invocationId, this, "CustomRequestId", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/header/custom/x-ms-client-request-id/9C4D50EE-2D56-4CD3-8152-34347DC9F2B0").ToString();
+            var url = new Uri(this.Client.BaseUri, "header/custom/x-ms-client-request-id/9C4D50EE-2D56-4CD3-8152-34347DC9F2B0").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");

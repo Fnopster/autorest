@@ -9,6 +9,7 @@
 namespace Fixtures.AcceptanceTestsHttp
 {
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
@@ -69,7 +70,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Head400", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/400").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/400").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("HEAD");
@@ -152,7 +153,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Get400", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/400").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/400").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("GET");
@@ -239,7 +240,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Put400", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/400").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/400").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("PUT");
@@ -330,7 +331,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Patch400", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/400").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/400").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("PATCH");
@@ -421,7 +422,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Post400", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/400").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/400").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -512,7 +513,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Delete400", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/400").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/400").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("DELETE");
@@ -599,7 +600,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Head401", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/401").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/401").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("HEAD");
@@ -682,7 +683,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Get402", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/402").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/402").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("GET");
@@ -765,7 +766,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Get403", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/403").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/403").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("GET");
@@ -852,7 +853,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Put404", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/404").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/404").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("PUT");
@@ -943,7 +944,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Patch405", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/405").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/405").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("PATCH");
@@ -1034,7 +1035,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Post406", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/406").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/406").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1125,7 +1126,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Delete407", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/407").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/407").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("DELETE");
@@ -1216,7 +1217,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Put409", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/409").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/409").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("PUT");
@@ -1303,7 +1304,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Head410", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/410").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/410").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("HEAD");
@@ -1386,7 +1387,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Get411", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/411").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/411").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("GET");
@@ -1469,7 +1470,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Get412", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/412").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/412").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("GET");
@@ -1556,7 +1557,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Put413", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/413").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/413").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("PUT");
@@ -1647,7 +1648,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Patch414", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/414").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/414").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("PATCH");
@@ -1738,7 +1739,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Post415", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/415").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/415").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("POST");
@@ -1825,7 +1826,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Get416", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/416").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/416").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("GET");
@@ -1912,7 +1913,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Delete417", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/417").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/417").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("DELETE");
@@ -1999,7 +2000,7 @@ namespace Fixtures.AcceptanceTestsHttp
                 ServiceClientTracing.Enter(invocationId, this, "Head429", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.Client.BaseUri, "/http/failure/client/429").ToString();
+            var url = new Uri(this.Client.BaseUri, "http/failure/client/429").ToString();
             // Create HTTP transport objects
             HttpRequestMessage httpRequest = new HttpRequestMessage();
             httpRequest.Method = new HttpMethod("HEAD");

@@ -9,6 +9,7 @@
 namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
 {
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
@@ -21,7 +22,6 @@ namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
     using Microsoft.Rest;
     using Microsoft.Rest.Serialization;
     using Newtonsoft.Json;
-    using System.Linq;
     using Microsoft.Rest.Azure;
     using Models;
 
@@ -217,7 +217,7 @@ namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
                 ServiceClientTracing.Enter(invocationId, this, "PutArray", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.BaseUri, "/azure/resource-flatten/array").ToString();
+            var url = new Uri(this.BaseUri, "azure/resource-flatten/array").ToString();
             List<string> queryParameters = new List<string>();
             if (queryParameters.Count > 0)
             {
@@ -326,7 +326,7 @@ namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
                 ServiceClientTracing.Enter(invocationId, this, "GetArray", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.BaseUri, "/azure/resource-flatten/array").ToString();
+            var url = new Uri(this.BaseUri, "azure/resource-flatten/array").ToString();
             List<string> queryParameters = new List<string>();
             if (queryParameters.Count > 0)
             {
@@ -441,7 +441,7 @@ namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
                 ServiceClientTracing.Enter(invocationId, this, "PutDictionary", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.BaseUri, "/azure/resource-flatten/dictionary").ToString();
+            var url = new Uri(this.BaseUri, "azure/resource-flatten/dictionary").ToString();
             List<string> queryParameters = new List<string>();
             if (queryParameters.Count > 0)
             {
@@ -550,7 +550,7 @@ namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
                 ServiceClientTracing.Enter(invocationId, this, "GetDictionary", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.BaseUri, "/azure/resource-flatten/dictionary").ToString();
+            var url = new Uri(this.BaseUri, "azure/resource-flatten/dictionary").ToString();
             List<string> queryParameters = new List<string>();
             if (queryParameters.Count > 0)
             {
@@ -665,7 +665,7 @@ namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
                 ServiceClientTracing.Enter(invocationId, this, "PutResourceCollection", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.BaseUri, "/azure/resource-flatten/resourcecollection").ToString();
+            var url = new Uri(this.BaseUri, "azure/resource-flatten/resourcecollection").ToString();
             List<string> queryParameters = new List<string>();
             if (queryParameters.Count > 0)
             {
@@ -774,7 +774,7 @@ namespace Fixtures.Azure.AcceptanceTestsResourceFlattening
                 ServiceClientTracing.Enter(invocationId, this, "GetResourceCollection", tracingParameters);
             }
             // Construct URL
-            var url = new Uri(this.BaseUri, "/azure/resource-flatten/resourcecollection").ToString();
+            var url = new Uri(this.BaseUri, "azure/resource-flatten/resourcecollection").ToString();
             List<string> queryParameters = new List<string>();
             if (queryParameters.Count > 0)
             {

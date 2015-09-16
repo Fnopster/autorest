@@ -50,11 +50,27 @@ namespace Microsoft.Rest.Modeler.Swagger.Model
         /// </summary>
         public virtual string Default { get; set; }
 
+        public virtual string MultipleOf { get; set; }
+
         public virtual string Maximum { get; set; }
+
+        public virtual bool ExclusiveMaximum { get; set; }
 
         public virtual string Minimum { get; set; }
 
+        public virtual bool ExclusiveMinimum { get; set; }
+
+        public virtual string MaxLength { get; set; }
+
+        public virtual string MinLength { get; set; }
+
         public virtual string Pattern { get; set; }
+
+        public virtual string MaxItems { get; set; }
+
+        public virtual string MinItems { get; set; }
+
+        public virtual bool UniqueItems { get; set; }
 
         public virtual IList<string> Enum { get; set; }
 
@@ -90,6 +106,10 @@ namespace Microsoft.Rest.Modeler.Swagger.Model
                     }
                     return PrimaryType.String;
                 case DataType.Number:
+                    if (string.Equals("decimal", Format, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return PrimaryType.Decimal;
+                    }
                     return PrimaryType.Double;
                 case DataType.Integer:
                     if (string.Equals("int64", Format, StringComparison.OrdinalIgnoreCase))
