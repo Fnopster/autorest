@@ -116,6 +116,31 @@ namespace @Settings.Namespace
             this.Initialize();
             this.BaseUri = baseUri;
         }
+
+        @EmptyLine
+
+        /// <summary>
+        /// Initializes a new instance of the @Model.Name class.
+        /// </summary>
+        /// <param name='baseUri'>
+        /// Optional. The base URI of the service.
+        /// </param>
+        /// <param name='tokenProvider'>
+        /// Required. The token provider used to generate authentication token for all web api requests.
+        /// </param>
+        public @(Model.Name)(Uri baseUri, Vulcan.Security.ITokenProvider tokenProvider)
+            : this(baseUri, new DelegatingHandler[] {
+                new Vulcan.WebApi.Client.AuthenticatedMessageHandler(tokenProvider),
+                new Vulcan.WebApi.Client.ErrorMessageHandler()
+            })
+        {
+            if (baseUri == null)
+            {
+                throw new ArgumentNullException("baseUri");
+            }
+            this.Initialize();
+            this.BaseUri = baseUri;
+        }
         @EmptyLine
 
         @{var parameters = Model.Properties.Where(p => p.IsRequired && p.IsReadOnly);}
@@ -192,6 +217,8 @@ namespace @Settings.Namespace
         /// </summary>
         private void Initialize()
         {
+            this.SetRetryPolicy(new Microsoft.Rest.TransientFaultHandling.RetryPolicy(new Microsoft.Rest.TransientFaultHandling.TransientErrorIgnoreStrategy(), 0));
+
         @foreach (var operation in Model.Operations) 
         {
             @:this.@(operation.MethodGroupName) = new @(operation.MethodGroupType)(this);
