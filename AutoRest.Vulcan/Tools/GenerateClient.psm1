@@ -2,9 +2,9 @@
 {
 	$configFileName = "WebApiClient.config.json"
 
-	$codeGenPkg = Get-Package -Filter "Vulcan.Rest.Generator.CSharp" | Sort { $_.Version } -Desc | Select -First 1
+	$codeGenPkg = Get-Package -Filter "AutoRest.Vulcan" | Sort { $_.Version } -Desc | Select -First 1
 	$codeGenVersion = $codeGenPkg.Version.Version.ToString()
-	$codeGenDir = ".\packages\Vulcan.Rest.Generator.CSharp.$codeGenVersion"
+	$codeGenDir = ".\packages\AutoRest.Vulcan.$codeGenVersion"
 	$codeGenExe = Resolve-Path "$codeGenDir\Tools\autorest.exe"
 
 	# Find config files
@@ -59,7 +59,7 @@
 		}
 
 
-		&$codeGenExe -input $swaggerUrl -namespace $namespace -CodeGenerator Vulcan.CSharp -OutputDirectory $projectDir -OutputFileName $outputName
+		&$codeGenExe -input $swaggerUrl -namespace $namespace -CodeGenerator CSharp -OutputDirectory $projectDir -OutputFileName $outputName
 		
 		if ($backupPath -ne $null) {
 			if (Test-Path $outputPath) {

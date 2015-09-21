@@ -141,16 +141,28 @@ namespace Microsoft.Rest.Generator.CSharp.TemplateModels
                 primaryType = PrimaryType.String;
             }
 
-            if (primaryType != PrimaryType.String)
+            if (primaryType == PrimaryType.String)
+            {
+
+                return string.Format(CultureInfo.InvariantCulture,
+                    "string.Join(\"{0}\", {1})", parameter.CollectionFormat.GetSeparator(), parameter.Name);
+            }
+            else if (
+                primaryType == PrimaryType.Int ||
+                primaryType == PrimaryType.Double ||
+                primaryType == PrimaryType.Long || 
+                primaryType == PrimaryType.Decimal)
+            {
+                return string.Format(CultureInfo.InvariantCulture,
+                    "string.Join(\"{0}\", {1}.Where( s => s != null).Select( s => s.ToString()))", parameter.CollectionFormat.GetSeparator(), parameter.Name);
+            }
+            else
             {
                 throw new InvalidOperationException(
-                    string.Format(CultureInfo.InvariantCulture, 
+                    string.Format(CultureInfo.InvariantCulture,
                     "Cannot generate a formatted sequence from a " +
-                                  "non-string List parameter {0}", parameter));
+                                  "{1} List parameter {0}", parameter, primaryType.Name));
             }
-
-            return string.Format(CultureInfo.InvariantCulture, 
-                "string.Join(\"{0}\", {1})", parameter.CollectionFormat.GetSeparator(), parameter.Name);
         }
 
         /// <summary>
