@@ -1,0 +1,6 @@
+﻿To generate web api client:
+
+	1. Update settings in WebApiClient.config.json
+	2. Run project without debugger
+	2. Open Package Manager Console
+	3. Run "Generate-Client"

@@ -52,6 +52,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AutoRest.Vulcan.nuspec" />
+    <None Include="Tools\GenerateClient.psm1" />
+    <None Include="Tools\init.ps1" />
+    <None Include="WebApiClient.config.json.pp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="WebApiClient.readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
