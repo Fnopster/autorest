@@ -80,8 +80,8 @@
     <None Include="app.config" />
     <None Include="AutoRest.Vulcan.nuspec" />
     <None Include="packages.config" />
-    <Content Include="Tools\GenerateClient.psm1" />
-    <Content Include="Tools\init.ps1" />
+    <None Include="Tools\GenerateClient.psm1" />
+    <None Include="Tools\init.ps1" />
     <Content Include="WebApiClient.config.json.pp" />
   </ItemGroup>
   <ItemGroup>
