@@ -61,7 +61,16 @@ namespace Microsoft.Rest.Generator.NodeJS.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The {0} npm package is required to execute the generated code..
+        ///   Looks up a localized string similar to {0} is not a supported Type..
+        /// </summary>
+        internal static string InvalidType {
+            get {
+                return ResourceManager.GetString("InvalidType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The {0} or higher npm package is required to execute the generated code..
         /// </summary>
         internal static string UsageInformation {
             get {

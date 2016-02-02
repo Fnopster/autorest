@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Rest.Generator;
 using Microsoft.Rest.Generator.ClientModel;
@@ -12,8 +13,6 @@ using Microsoft.Rest.Generator.Utilities;
 using Microsoft.Rest.Modeler.Swagger.Model;
 using ParameterLocation = Microsoft.Rest.Modeler.Swagger.Model.ParameterLocation;
 using Resources = Microsoft.Rest.Modeler.Swagger.Properties.Resources;
-using System.Globalization;
-using System.Text;
 
 namespace Microsoft.Rest.Modeler.Swagger
 {
@@ -58,12 +57,16 @@ namespace Microsoft.Rest.Modeler.Swagger
         /// Builds service model from swagger file.
         /// </summary>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
         public override ServiceClient Build()
         {
             PrimaryType.Reset();
             Logger.LogInfo(Resources.ParsingSwagger);
             ServiceDefinition = SwaggerParser.Load(Settings.Input, Settings.FileSystem);
             Logger.LogInfo(Resources.GeneratingClient);
+            // Update settings
+            UpdateSettings();
+
             InitializeClientModel();
             BuildCompositeTypes();
 
@@ -79,7 +82,7 @@ namespace Microsoft.Rest.Modeler.Swagger
             }
 
             // Build methods
-            foreach (var path in ServiceDefinition.Paths)
+            foreach (var path in ServiceDefinition.Paths.Concat(ServiceDefinition.CustomPaths))
             {
                 foreach (var verb in path.Value.Keys)
                 {
@@ -97,9 +100,18 @@ namespace Microsoft.Rest.Modeler.Swagger
 
                     if (verb.ToHttpMethod() != HttpMethod.Options)
                     {
-                        var method = BuildMethod(verb.ToHttpMethod(), path.Key, methodName, operation);
+                        string url = path.Key;
+                        if (url.Contains("?"))
+                        {
+                            url = url.Substring(0, url.IndexOf('?'));
+                        }
+                        var method = BuildMethod(verb.ToHttpMethod(), url, methodName, operation);
                         method.Group = methodGroup;
                         ServiceClient.Methods.Add(method);
+                        if (method.DefaultResponse.Body is CompositeType)
+                        {
+                            ServiceClient.ErrorTypes.Add((CompositeType)method.DefaultResponse.Body);
+                        }
                     }
                     else
                     {
@@ -121,6 +133,18 @@ namespace Microsoft.Rest.Modeler.Swagger
             }
 
             return ServiceClient;
+        }
+
+        private void UpdateSettings()
+        {
+            if (ServiceDefinition.Info.CodeGenerationSettings != null)
+            {
+                foreach (var key in ServiceDefinition.Info.CodeGenerationSettings.Extensions.Keys)
+                {
+                    this.Settings.CustomSettings[key] = ServiceDefinition.Info.CodeGenerationSettings.Extensions[key].ToString();
+                }
+                Settings.PopulateSettings(this.Settings, this.Settings.CustomSettings);
+            }
         }
 
         /// <summary>
@@ -264,9 +288,14 @@ namespace Microsoft.Rest.Modeler.Swagger
         /// </summary>
         /// <param name="operation">The swagger operation.</param>
         /// <returns>Method group name or null.</returns>
-        private static string GetMethodGroup(Operation operation)
+        public static string GetMethodGroup(Operation operation)
         {
-            if (operation.OperationId.IndexOf('_') == -1)
+            if (operation == null)
+            {
+                throw new ArgumentNullException("operation");
+            }
+
+            if (operation.OperationId == null || operation.OperationId.IndexOf('_') == -1)
             {
                 return null;
             }
@@ -280,8 +309,18 @@ namespace Microsoft.Rest.Modeler.Swagger
         /// </summary>
         /// <param name="operation">The swagger operation.</param>
         /// <returns>Method name.</returns>
-        private static string GetMethodName(Operation operation)
+        public static string GetMethodName(Operation operation)
         {
+            if (operation == null)
+            {
+                throw new ArgumentNullException("operation");
+            }
+
+            if (operation.OperationId == null)
+            {
+                return null;
+            }
+
             if (operation.OperationId.IndexOf('_') == -1)
             {
                 return operation.OperationId;

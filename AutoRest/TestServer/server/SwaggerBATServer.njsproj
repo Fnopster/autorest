@@ -19,8 +19,11 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
   <ItemGroup>
+    <Compile Include="routes\azureSpecials.js" />
     <Compile Include="routes\azureUrl.js" />
+    <Compile Include="routes\datetime-rfc1123.js" />
     <Compile Include="routes\files.js" />
+    <Compile Include="routes\formData.js" />
     <Compile Include="util\constants.js" />
     <Compile Include="util\utils.js" />
     <Content Include="package.json" />
@@ -32,6 +35,7 @@
     <Compile Include="routes\date.js" />
     <Compile Include="routes\datetime.js" />
     <Compile Include="routes\dictionary.js" />
+    <Compile Include="routes\duration.js" />
     <Compile Include="routes\header.js" />
     <Compile Include="routes\httpResponses.js" />
     <Compile Include="routes\index.js" />
@@ -44,8 +48,10 @@
     <Compile Include="routes\queries.js" />
     <Compile Include="routes\report.js" />
     <Compile Include="routes\reqopt.js" />
+    <Compile Include="routes\azureParameterGrouping.js" />
     <Compile Include="routes\resource-flatten.js" />
     <Compile Include="routes\string.js" />
+    <Content Include="routes\sample.png" />
     <Content Include="startup\www.js" />
     <Content Include="views\error.jade" />
     <Content Include="views\index.jade" />

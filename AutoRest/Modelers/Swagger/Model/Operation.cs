@@ -10,6 +10,12 @@ namespace Microsoft.Rest.Modeler.Swagger.Model
     /// </summary>
     public class Operation : SwaggerBase
     {
+        public Operation()
+        {
+            Consumes = new List<string>();
+            Produces = new List<string>();
+        }
+
         /// <summary>
         /// A list of tags for API documentation control.
         /// </summary>
@@ -51,7 +57,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Model
         /// <summary>
         /// The list of possible responses as they are returned from executing this operation.
         /// </summary>
-        public Dictionary<string, Response> Responses { get; set; }
+        public Dictionary<string, OperationResponse> Responses { get; set; }
 
         /// <summary>
         /// The transfer protocol for the operation. 

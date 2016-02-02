@@ -2,11 +2,11 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Java.TemplateModels;
 using Microsoft.Rest.Generator.Utilities;
-using System.Globalization;
 
 namespace Microsoft.Rest.Generator.Java
 {
@@ -47,25 +47,24 @@ namespace Microsoft.Rest.Generator.Java
         {
             get
             {
-                return JavaCodeNamer.GetServiceName(Name);
+                return JavaCodeNamer.GetServiceName(Name.ToPascalCase());
             }
         }
 
-        public IEnumerable<string> ImplImports
+        public virtual IEnumerable<string> ImplImports
         {
             get
             {
                 HashSet<string> classes = new HashSet<string>();
 
-                if (this.Properties.Any(p => p.Type != null &&
-                                             p.Type.Name.Equals("ServiceClientCredentials", System.StringComparison.OrdinalIgnoreCase)))
+                if (this.Properties.Any(p => p.Type == PrimaryType.Credentials))
                 {
                     classes.Add("com.microsoft.rest.credentials.ServiceClientCredentials");
                 }
                 classes.AddRange(new[]{
                         "com.microsoft.rest.ServiceClient",
                         "com.squareup.okhttp.OkHttpClient",
-                        "retrofit.RestAdapter" 
+                        "retrofit.Retrofit" 
                     });
                 
                 if (this.MethodTemplateModels.IsNullOrEmpty())
@@ -73,74 +72,39 @@ namespace Microsoft.Rest.Generator.Java
                     return classes;
                 }
 
-                classes.AddRange(new[]{
-                    "com.google.gson.reflect.TypeToken",
-                    "com.microsoft.rest.ServiceCallback",
-                    "com.microsoft.rest.ServiceException",
-                    "com.microsoft.rest.ServiceResponse",
-                    "com.microsoft.rest.ServiceResponseBuilder",
-                    "com.microsoft.rest.ServiceResponseCallback",
-                    "retrofit.RetrofitError",
-                    "retrofit.client.Response"
-                });
-
-                IList<IType> types = this.MethodTemplateModels
-                    .SelectMany(mtm => mtm.Parameters.Select(p => p.Type))
-                    .Concat(this.MethodTemplateModels.SelectMany(mtm => mtm.Responses.Select(res => res.Value)))
-                    .Concat(this.MethodTemplateModels.Select(mtm => mtm.DefaultResponse))
-                    .Distinct()
-                    .ToList();
-
-                classes.UnionWith(types.TypeImports(this.Namespace));
+                classes.AddRange(this.MethodTemplateModels
+                    .SelectMany(m => m.ImplImports)
+                    .OrderBy(i => i));
 
 
                 return classes.AsEnumerable();
             }
         }
 
-        public IEnumerable<string> InterfaceImports
+        public virtual List<string> InterfaceImports
         {
             get
             {
                 HashSet<string> classes = new HashSet<string>();
-
-                if (this.Properties.Any(p => p.Type != null &&
-                                             p.Type.Name.Equals("ServiceClientCredentials", System.StringComparison.OrdinalIgnoreCase)))
+                classes.Add("java.util.List");
+                classes.Add("com.squareup.okhttp.Interceptor");
+                classes.Add("com.squareup.okhttp.logging.HttpLoggingInterceptor.Level");
+                classes.Add("com.microsoft.rest.serializer.JacksonMapperAdapter");
+                if (this.Properties.Any(p => p.Type == PrimaryType.Credentials))
                 {
                     classes.Add("com.microsoft.rest.credentials.ServiceClientCredentials");
                 }
 
                 if (this.MethodTemplateModels.IsNullOrEmpty())
                 {
-                    return classes;
+                    return classes.ToList();
                 }
 
-                classes.AddRange(new[]{
-                    "com.microsoft.rest.ServiceCallback",
-                    "com.microsoft.rest.ServiceException",
-                    "com.microsoft.rest.ServiceResponseCallback",
-                    "retrofit.client.Response"
-                });
+                classes.AddRange(this.MethodTemplateModels
+                    .SelectMany(m => m.InterfaceImports)
+                    .OrderBy(i => i).Distinct());
 
-                IList<IType> types = this.MethodTemplateModels
-                    .SelectMany(mtm => mtm.Parameters.Select(p => p.Type))
-                    .Concat(this.MethodTemplateModels.Select(mtm => mtm.ReturnType))
-                    .Distinct()
-                    .ToList();
-                classes.UnionWith(types.TypeImports(this.Namespace));
-
-                foreach (var method in this.MethodTemplateModels)
-                {
-                    classes.Add("retrofit.http." + method.HttpMethod.ToString().ToUpper(CultureInfo.InvariantCulture));
-                    foreach (var param in method.Parameters)
-                    {
-                        if (param.Location != ParameterLocation.None &&
-                            param.Location != ParameterLocation.FormData)
-                            classes.Add("retrofit.http." + param.Location.ToString());
-                    }
-                }
-
-                return classes.AsEnumerable();
+                return classes.ToList();
             }
         }
     }

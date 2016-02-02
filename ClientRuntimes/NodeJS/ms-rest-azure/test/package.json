@@ -23,7 +23,7 @@
   "dependencies": {
     "async": "0.2.7",
     "uuid": "2.0.1",
-    "adal-node": "0.1.13",
+    "adal-node": "0.1.16",
     "ms-rest": "file:../../ms-rest"
   },
   "devDependencies": {
@@ -31,6 +31,7 @@
     "xunit-file": "0.0.5",
     "mocha": "2.2.5",
     "should": "5.2.0",
+    "moment":  "*",
     "underscore": "*"
   },
   "homepage": "https://github.com/Azure/AutoRest",

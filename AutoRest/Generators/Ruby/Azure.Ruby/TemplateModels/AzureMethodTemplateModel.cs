@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using Microsoft.Rest.Generator.Azure.NodeJS.Properties;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Ruby;
@@ -33,14 +34,21 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
 
             ParameterTemplateModels.Clear();
             source.Parameters.ForEach(p => ParameterTemplateModels.Add(new AzureParameterTemplateModel(p)));
+
+            this.ClientRequestIdString = AzureExtensions.GetClientRequestIdString(source);
+            this.RequestIdString = AzureExtensions.GetRequestIdString(source);
         }
+
+        public string ClientRequestIdString { get; private set; }
+
+        public string RequestIdString { get; private set; }
 
         /// <summary>
         /// Returns true if method has x-ms-long-running-operation extension.
         /// </summary>
         public bool IsLongRunningOperation
         {
-            get { return Extensions.ContainsKey(AzureCodeGenerator.LongRunningExtension); }
+            get { return Extensions.ContainsKey(AzureExtensions.LongRunningExtension); }
         }
 
         /// <summary>
@@ -84,7 +92,7 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
                     pathParameter.SerializedName,
                     variableName);
 
-                if (pathParameter.Extensions.ContainsKey(AzureCodeGenerator.SkipUrlEncodingExtension))
+                if (pathParameter.Extensions.ContainsKey(AzureExtensions.SkipUrlEncodingExtension))
                 {
                     addPathParameterString = String.Format(CultureInfo.InvariantCulture, "{0}['{{{1}}}'] = {2} if {0}.include?('{{{1}}}')",
                         inputVariableName,
@@ -112,7 +120,7 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
 
             foreach (var param in queryParametres)
             {
-                bool hasSkipUrlExtension = param.Extensions.ContainsKey(AzureCodeGenerator.SkipUrlEncodingExtension);
+                bool hasSkipUrlExtension = param.Extensions.ContainsKey(AzureExtensions.SkipUrlEncodingExtension);
 
                 if (hasSkipUrlExtension)
                 {
@@ -144,7 +152,7 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
         {
             var builder = new IndentedStringBuilder("  ");
 
-            string serializationLogic = type.DeserializeType(this.Scope, variableName, ClassNamespaces);
+            string serializationLogic = type.DeserializeType(this.Scope, variableName);
             return builder.AppendLine(serializationLogic).ToString();
         }
 
@@ -157,13 +165,14 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
             {
                 var sb = new IndentedStringBuilder();
 
-                if (this.HttpMethod == HttpMethod.Head && this.ReturnType != null)
+                if (this.HttpMethod == HttpMethod.Head && this.ReturnType.Body != null)
                 {
-                    sb.AppendLine("result.body = (status_code == 204)");
+                    HttpStatusCode code = this.Responses.Keys.FirstOrDefault(AzureExtensions.HttpHeadStatusCodeSuccessFunc);
+                    sb.AppendLine("result.body = (status_code == {0})", (int)code);
                 }
 
                 sb.AppendLine(
-                    "result.request_id = http_response['x-ms-request-id'] unless http_response['x-ms-request-id'].nil?");
+                    "result.request_id = http_response['{0}'] unless http_response['{0}'].nil?", this.RequestIdString);
 
                 sb.AppendLine(base.InitializeResponseBody);
 
@@ -194,7 +203,7 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
             get
             {
                 IndentedStringBuilder sb = new IndentedStringBuilder();
-                sb.AppendLine("request_headers['x-ms-client-request-id'] = SecureRandom.uuid")
+                sb.AppendLine("request_headers['{0}'] = SecureRandom.uuid", this.ClientRequestIdString)
                   .AppendLine(base.SetDefaultHeaders);
                 return sb.ToString();
             }
@@ -233,7 +242,7 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
         {
             get
             {
-                if (DefaultResponse == null || DefaultResponse.Name == "CloudError")
+                if (DefaultResponse.Body == null || DefaultResponse.Body.Name == "CloudError")
                 {
                     return "MsRestAzure::AzureOperationError";
                 }

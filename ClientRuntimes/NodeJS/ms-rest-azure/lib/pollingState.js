@@ -14,13 +14,31 @@ var LroStates = require('./constants').LongRunningOperationStates;
  * running operation status.
  * 
  * @param {number} retryTimeout - The timeout in seconds to retry on
- * intermediate operation results.
+ * intermediate operation results. Default Value is 30.
  */
 function PollingState(resultOfInitialRequest, retryTimeout) {
+  if (retryTimeout === null || retryTimeout === undefined) {
+    retryTimeout = 30;
+  }
   this._retryTimeout = retryTimeout;
   this.updateResponse(resultOfInitialRequest.response);
   this.request = resultOfInitialRequest.request;
-  this.resource = resultOfInitialRequest.body;
+  //Parse response.body & assign it as the resource
+  try {
+    if (resultOfInitialRequest.body && 
+        typeof resultOfInitialRequest.body.valueOf() === 'string' &&
+        resultOfInitialRequest.body.length > 0) {
+      this.resource = JSON.parse(resultOfInitialRequest.body);
+    } else {
+      this.resource = resultOfInitialRequest.body;
+    } 
+  } catch (error) {
+    var deserializationError = new Error(util.format('Error "%s" occurred in parsing the responseBody ' + 
+      'while creating the PollingState for Long Running Operation- "%s"', error, resultOfInitialRequest.body));
+    deserializationError.request = resultOfInitialRequest.request;
+    deserializationError.response = resultOfInitialRequest.response;
+    throw deserializationError;
+  }
   
   if (this.resource && this.resource.properties && this.resource.properties.provisioningState) {
     this.status = this.resource.properties.provisioningState;
@@ -82,7 +100,11 @@ PollingState.prototype.getOperationResponse = function () {
   var result = new msRest.HttpOperationResponse();
   result.request = this.request;
   result.response = this.response;
-  result.body = this.resource;
+  if (this.resource && typeof this.resource.valueOf() === 'string') {
+    result.body = this.resource;
+  } else {
+    result.body = JSON.stringify(this.resource);
+  }
   return result;
 };
 
@@ -92,16 +114,41 @@ PollingState.prototype.getOperationResponse = function () {
  */
 PollingState.prototype.getCloudError = function (err) {
   var errMsg;
+  var errCode;
+
+  var error = new Error();
+  error.request = msRest.stripRequest(this.request);
+  var parsedResponse = this.response.body;
+  error.response = msRest.stripResponse(this.response);
+  try {
+    if (this.response.body && typeof this.response.body.valueOf() === 'string') {
+      if (this.response.body === '') this.response.body = null;
+      parsedResponse = JSON.parse(this.response.body);
+    }
+  } catch (err) {
+    error.message = util.format('Error "%s" occurred while deserializing the error ' + 
+      'message "%s" for long running operation.', err.message, this.response.body);
+    return error;
+  }
+  
   if (err && err.message) {
-    errMsg = util.format('Long running operation failed with error: \'%s\'.', err.message);  
+    errMsg = util.format('Long running operation failed with error: \'%s\'.', err.message);
   } else {
     errMsg = util.format('Long running operation failed with status: \'%s\'.', this.status);
   }
-  
-  var error = new Error(errMsg);
-  error.body = this.response.body;
-  error.request = this.request;
-  error.response = this.response;
+
+  if (parsedResponse) {
+    if (parsedResponse.error && parsedResponse.error.message) {
+      errMsg = util.format('Long running operation failed with error: \'%s\'.', parsedResponse.error.message);
+    }
+    if (parsedResponse.error && parsedResponse.error.code) {
+      errCode = parsedResponse.error.code;
+    }
+  }
+
+  error.message = errMsg;
+  if (errCode) error.code = errCode;
+  error.body = parsedResponse;
   return error;
 };
 

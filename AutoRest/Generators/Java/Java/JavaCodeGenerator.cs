@@ -1,20 +1,21 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Linq;
+using System.Globalization;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Java.Properties;
 using Microsoft.Rest.Generator.Java.Templates;
 using Microsoft.Rest.Generator.Utilities;
-using System.Linq;
-using System.Threading.Tasks;
-using System.IO;
-using System.Globalization;
 
 namespace Microsoft.Rest.Generator.Java
 {
     public class JavaCodeGenerator : CodeGenerator
     {
-        private const string ClientRuntimePackage = "ms-rest version 1.1.0";
+        private const string ClientRuntimePackage = "com.microsoft.rest:client-runtime:0.0.1-SNAPSHOT";
+        private const string _packageInfoFileName = "package-info.java";
 
         public JavaCodeNamer Namer { get; private set; }
 
@@ -67,10 +68,7 @@ namespace Microsoft.Rest.Generator.Java
                 serviceClient.Properties.Add(new Property
                 {
                     Name = "credentials",
-                    Type = new CompositeType
-                    {
-                        Name = "ServiceClientCredentials"
-                    },
+                    Type = PrimaryType.Credentials,
                     IsRequired = true,
                     Documentation = "Subscription credentials which uniquely identify client subscription."
                 });
@@ -99,16 +97,13 @@ namespace Microsoft.Rest.Generator.Java
             await Write(serviceClientInterfaceTemplate, serviceClient.Name.ToPascalCase() + ".java");
 
             //Models
-            if (serviceClient.ModelTypes.Any())
+            foreach (var modelType in serviceClient.ModelTypes.Concat(serviceClient.HeaderTypes))
             {
-                foreach (var modelType in serviceClientTemplateModel.ModelTemplateModels)
+                var modelTemplate = new ModelTemplate
                 {
-                    var modelTemplate = new ModelTemplate
-                    {
-                        Model = modelType
-                    };
-                    await Write(modelTemplate, Path.Combine("models", modelType.Name.ToPascalCase() + ".java"));
-                }
+                    Model = new ModelTemplateModel(modelType, serviceClient)
+                };
+                await Write(modelTemplate, Path.Combine("models", modelType.Name.ToPascalCase() + ".java"));
             }
 
             //MethodGroups
@@ -138,6 +133,26 @@ namespace Microsoft.Rest.Generator.Java
                 };
                 await Write(enumTemplate, Path.Combine("models", enumTemplate.Model.Name.ToPascalCase() + ".java"));
             }
+
+            // Exception
+            foreach (var exceptionType in serviceClient.ErrorTypes)
+            {
+                var exceptionTemplate = new ExceptionTemplate
+                {
+                    Model = new ModelTemplateModel(exceptionType, serviceClient),
+                };
+                await Write(exceptionTemplate, Path.Combine("models", exceptionTemplate.Model.ExceptionTypeDefinitionName.ToPascalCase() + ".java"));
+            }
+
+            // package-info.java
+            await Write(new PackageInfoTemplate
+            {
+                Model = new PackageInfoTemplateModel(serviceClient, serviceClient.Name)
+            }, _packageInfoFileName);
+            await Write(new PackageInfoTemplate
+            {
+                Model = new PackageInfoTemplateModel(serviceClient, serviceClient.Name, true)
+            }, Path.Combine("models", _packageInfoFileName));
         }
     }
 }

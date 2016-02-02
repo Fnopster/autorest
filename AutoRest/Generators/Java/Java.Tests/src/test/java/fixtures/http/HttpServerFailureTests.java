@@ -1,12 +1,12 @@
 package fixtures.http;
 
-import com.microsoft.rest.ServiceException;
+import fixtures.http.models.ErrorException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class HttpServerFailureTests {
-    static AutoRestHttpInfrastructureTestService client;
+    private static AutoRestHttpInfrastructureTestService client;
 
     @BeforeClass
     public static void setup() {
@@ -16,36 +16,36 @@ public class HttpServerFailureTests {
     @Test
     public void head501() throws Exception {
         try {
-            client.getHttpServerFailure().head501();
-        } catch (ServiceException ex) {
-            Assert.assertEquals(501, ex.getResponse().getStatus());
+            client.getHttpServerFailureOperations().head501();
+        } catch (ErrorException ex) {
+            Assert.assertEquals(501, ex.getResponse().code());
         }
     }
 
     @Test
     public void get501() throws Exception {
         try {
-            client.getHttpServerFailure().get501();
-        } catch (ServiceException ex) {
-            Assert.assertEquals(501, ex.getResponse().getStatus());
+            client.getHttpServerFailureOperations().get501();
+        } catch (ErrorException ex) {
+            Assert.assertEquals(501, ex.getResponse().code());
         }
     }
 
     @Test
     public void post505() throws Exception {
         try {
-            client.getHttpServerFailure().post505(true);
-        } catch (ServiceException ex) {
-            Assert.assertEquals(505, ex.getResponse().getStatus());
+            client.getHttpServerFailureOperations().post505(true);
+        } catch (ErrorException ex) {
+            Assert.assertEquals(505, ex.getResponse().code());
         }
     }
 
     @Test
     public void delete505() throws Exception {
         try {
-            client.getHttpServerFailure().delete505(true);
-        } catch (ServiceException ex) {
-            Assert.assertEquals(505, ex.getResponse().getStatus());
+            client.getHttpServerFailureOperations().delete505(true);
+        } catch (ErrorException ex) {
+            Assert.assertEquals(505, ex.getResponse().code());
         }
     }
 }

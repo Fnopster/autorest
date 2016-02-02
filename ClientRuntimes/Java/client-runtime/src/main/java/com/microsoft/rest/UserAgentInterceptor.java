@@ -10,6 +10,7 @@ package com.microsoft.rest;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import com.squareup.okhttp.internal.Version;
 
 import java.io.IOException;
 
@@ -17,7 +18,14 @@ import java.io.IOException;
  * User agent interceptor for putting a 'User-Agent' header in the request.
  */
 public class UserAgentInterceptor implements Interceptor {
+    /**
+     * The default user agent header.
+     */
     private static final String DEFAULT_USER_AGENT_HEADER = "AutoRest-Java";
+
+    /**
+     * The user agent header string.
+     */
     private String userAgent;
 
     /**
@@ -42,7 +50,7 @@ public class UserAgentInterceptor implements Interceptor {
     public Response intercept(Chain chain) throws IOException {
         Request request = chain.request();
         String header = request.header("User-Agent");
-        if (header != null && header.equals(DEFAULT_USER_AGENT_HEADER)) {
+        if (header == null || header.equals(Version.userAgent()) || header.equals(DEFAULT_USER_AGENT_HEADER)) {
             request = chain.request().newBuilder()
                     .header("User-Agent", userAgent)
                     .build();

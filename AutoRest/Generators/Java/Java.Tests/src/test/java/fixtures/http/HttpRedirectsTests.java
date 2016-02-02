@@ -1,7 +1,6 @@
 package fixtures.http;
 
 import com.microsoft.rest.ServiceCallback;
-import com.microsoft.rest.ServiceException;
 import com.microsoft.rest.ServiceResponse;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.fail;
 
 public class HttpRedirectsTests {
-    static AutoRestHttpInfrastructureTestService client;
+    private static AutoRestHttpInfrastructureTestService client;
     private CountDownLatch lock = new CountDownLatch(1);
 
     @BeforeClass
@@ -25,32 +24,32 @@ public class HttpRedirectsTests {
 
     @Test
     public void head300() throws Exception {
-        client.getHttpRedirects().head300Async(new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().head300Async(new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getHeadResponse().code());
                 lock.countDown();
             }
         });
-        Assert.assertTrue(lock.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(lock.await(100000, TimeUnit.MILLISECONDS));
     }
 
     @Test
     public void get300() throws Exception {
-        client.getHttpRedirects().get300Async(new ServiceCallback<List<String>>() {
+        client.getHttpRedirectsOperations().get300Async(new ServiceCallback<List<String>>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<List<String>> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -59,15 +58,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void head301() throws Exception {
-        client.getHttpRedirects().head301Async(new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().head301Async(new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getHeadResponse().code());
                 lock.countDown();
             }
         });
@@ -76,15 +75,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void get301() throws Exception {
-        client.getHttpRedirects().get301Async(new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().get301Async(new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -94,15 +93,15 @@ public class HttpRedirectsTests {
     @Test
     @Ignore("Not supported yet")
     public void put301() throws Exception {
-        client.getHttpRedirects().put301Async(true, new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().put301Async(true, new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(301, response.getResponse().getStatus());
+                Assert.assertEquals(301, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -111,15 +110,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void head302() throws Exception {
-        client.getHttpRedirects().head302Async(new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().head302Async(new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getHeadResponse().code());
                 lock.countDown();
             }
         });
@@ -128,15 +127,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void get302() throws Exception {
-        client.getHttpRedirects().get302Async(new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().get302Async(new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -146,15 +145,15 @@ public class HttpRedirectsTests {
     @Test
     @Ignore("Not supported yet")
     public void patch302() throws Exception {
-        client.getHttpRedirects().patch302Async(true, new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().patch302Async(true, new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(302, response.getResponse().getStatus());
+                Assert.assertEquals(302, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -163,15 +162,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void post303() throws Exception {
-        client.getHttpRedirects().post303Async(true, new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().post303Async(true, new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -180,15 +179,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void head307() throws Exception {
-        client.getHttpRedirects().head307Async(new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().head307Async(new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getHeadResponse().code());
                 lock.countDown();
             }
         });
@@ -197,15 +196,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void get307() throws Exception {
-        client.getHttpRedirects().get307Async(new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().get307Async(new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(200, response.getResponse().getStatus());
+                Assert.assertEquals(200, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -214,15 +213,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void put307() throws Exception {
-        client.getHttpRedirects().put307Async(true, new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().put307Async(true, new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(307, response.getResponse().getStatus());
+                Assert.assertEquals(307, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -231,15 +230,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void patch307() throws Exception {
-        client.getHttpRedirects().patch307Async(true, new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().patch307Async(true, new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(307, response.getResponse().getStatus());
+                Assert.assertEquals(307, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -248,15 +247,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void post307() throws Exception {
-        client.getHttpRedirects().post307Async(true, new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().post307Async(true, new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(307, response.getResponse().getStatus());
+                Assert.assertEquals(307, response.getResponse().code());
                 lock.countDown();
             }
         });
@@ -265,15 +264,15 @@ public class HttpRedirectsTests {
 
     @Test
     public void delete307() throws Exception {
-        client.getHttpRedirects().delete307Async(true, new ServiceCallback<Void>() {
+        client.getHttpRedirectsOperations().delete307Async(true, new ServiceCallback<Void>() {
             @Override
-            public void failure(ServiceException exception) {
+            public void failure(Throwable t) {
                 fail();
             }
 
             @Override
             public void success(ServiceResponse<Void> response) {
-                Assert.assertEquals(307, response.getResponse().getStatus());
+                Assert.assertEquals(307, response.getResponse().code());
                 lock.countDown();
             }
         });

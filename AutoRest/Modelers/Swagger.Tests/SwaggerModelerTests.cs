@@ -2,12 +2,13 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using Microsoft.Rest.Generator;
 using Microsoft.Rest.Generator.ClientModel;
+using Microsoft.Rest.Generator.CSharp;
+using Microsoft.Rest.Generator.Extensibility;
 using Xunit;
 
 namespace Microsoft.Rest.Modeler.Swagger.Tests
@@ -25,6 +26,9 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             });
             var clientModel = modeler.Build();
 
+            var description = "The Products endpoint returns information about the Uber products offered at a given location. The response includes the display name and other details about each product, and lists the products in the proper display order.";
+            var summary = "Product Types";
+
             Assert.NotNull(clientModel);
             Assert.Equal(2, clientModel.Properties.Count);
             Assert.True(clientModel.Properties.Any(p => p.Name.Equals("subscriptionId", StringComparison.OrdinalIgnoreCase)));
@@ -35,7 +39,10 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.Equal(0, clientModel.Methods.Count(m => m.Group != null));
             Assert.Equal(2, clientModel.Methods.Count);
             Assert.Equal("list", clientModel.Methods[0].Name);
-            Assert.NotEmpty(clientModel.Methods[0].Documentation);
+            Assert.NotEmpty(clientModel.Methods[0].Description);
+            Assert.Equal(description, clientModel.Methods[0].Description);
+            Assert.NotEmpty(clientModel.Methods[0].Summary);
+            Assert.Equal(summary, clientModel.Methods[0].Summary);
             Assert.Equal(HttpMethod.Get, clientModel.Methods[0].HttpMethod);
             Assert.Equal(3, clientModel.Methods[0].Parameters.Count);
             Assert.Equal("subscriptionId", clientModel.Methods[0].Parameters[0].Name);
@@ -47,18 +54,21 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.Equal(ParameterLocation.Path, clientModel.Methods[0].Parameters[0].Location);
             Assert.Equal("String", clientModel.Methods[0].Parameters[0].Type.ToString());
             Assert.Equal("reset", clientModel.Methods[1].Name);
-            Assert.Equal("Product", clientModel.ModelTypes[0].Name);
-            Assert.Equal("Product", clientModel.ModelTypes[0].SerializedName);
-            Assert.Equal("The product documentation.", clientModel.ModelTypes[0].Documentation);
-            Assert.Equal("product_id", clientModel.ModelTypes[0].Properties[0].Name);
-            Assert.Equal("product_id", clientModel.ModelTypes[0].Properties[0].SerializedName);
-            Assert.Null(clientModel.Methods[1].ReturnType);
-            Assert.Null(clientModel.Methods[1].Responses[HttpStatusCode.NoContent]);
+            Assert.Equal("Product", clientModel.ModelTypes.First(m=>m.Name == "Product").Name);
+            Assert.Equal("Product", clientModel.ModelTypes.First(m => m.Name == "Product").SerializedName);
+            Assert.Equal("The product documentation.", clientModel.ModelTypes.First(m => m.Name == "Product").Documentation);
+            Assert.Equal("product_id", clientModel.ModelTypes.First(m=>m.Name == "Product").Properties[0].Name);
+            Assert.Equal("product_id", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[0].SerializedName);
+            Assert.Null(clientModel.Methods[1].ReturnType.Body);
+            Assert.Null(clientModel.Methods[1].Responses[HttpStatusCode.NoContent].Body);
             Assert.Equal(3, clientModel.Methods[1].Parameters.Count);
             Assert.Equal("subscriptionId", clientModel.Methods[1].Parameters[0].Name);
             Assert.Null(clientModel.Methods[1].Parameters[0].ClientProperty);
             Assert.Equal("resourceGroupName", clientModel.Methods[1].Parameters[1].Name);
             Assert.Equal("apiVersion", clientModel.Methods[1].Parameters[2].Name);
+
+            Assert.Equal("capacity", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[3].Name);
+            Assert.Equal("100", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[3].DefaultValue);
         }
 
         [Fact]
@@ -87,8 +97,8 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
 
             Assert.NotNull(clientModel);
             Assert.Equal(3, clientModel.ModelTypes.Count);
-            Assert.Equal("ChildProduct", clientModel.ModelTypes[0].Name);
-            Assert.Equal("Product", clientModel.ModelTypes[0].BaseModelType.Name);
+            Assert.Equal("ChildProduct", clientModel.ModelTypes.First(m => m.Name == "ChildProduct").Name);
+            Assert.Equal("Product", clientModel.ModelTypes.First(m => m.Name == "ChildProduct").BaseModelType.Name);
         }
 
         [Fact]
@@ -103,8 +113,8 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
 
             Assert.NotNull(clientModel);
             Assert.Equal(3, clientModel.ModelTypes.Count);
-            Assert.Equal("ChildProduct", clientModel.ModelTypes[0].Name);
-            Assert.Equal("Product", clientModel.ModelTypes[0].Properties[1].Type.Name);
+            Assert.Equal("ChildProduct", clientModel.ModelTypes.First(m => m.Name == "ChildProduct").Name);
+            Assert.Equal("Product", clientModel.ModelTypes.First(m => m.Name == "ChildProduct").Properties[1].Type.Name);
         }
 
         [Fact]
@@ -118,7 +128,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             var clientModel = modeler.Build();
 
             Assert.NotNull(clientModel);
-            Assert.True(clientModel.ModelTypes[0].Extensions.ContainsKey("x-ms-external"));
+            Assert.True(clientModel.ModelTypes.First().Extensions.ContainsKey("x-ms-external"));
         }
 
         [Fact]
@@ -132,14 +142,14 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             var clientModel = modeler.Build();
 
             Assert.NotNull(clientModel);
-            Assert.Equal("pet", clientModel.ModelTypes[0].Name);
-            Assert.Equal("cat", clientModel.ModelTypes[1].Name);
-            Assert.Equal("pet", clientModel.ModelTypes[1].BaseModelType.Name);
-            Assert.Equal("breed", clientModel.ModelTypes[1].Properties[0].Name);
-            Assert.Equal(true, clientModel.ModelTypes[1].Properties[0].IsRequired);
-            Assert.Equal("color", clientModel.ModelTypes[1].Properties[1].Name);
-            Assert.Equal("siamese", clientModel.ModelTypes[2].Name);
-            Assert.Equal("cat", clientModel.ModelTypes[2].BaseModelType.Name);
+            Assert.Equal("pet", clientModel.ModelTypes.First(m => m.Name == "pet").Name);
+            Assert.Equal("cat", clientModel.ModelTypes.First(m => m.Name == "cat").Name);
+            Assert.Equal("pet", clientModel.ModelTypes.First(m => m.Name == "cat").BaseModelType.Name);
+            Assert.Equal("breed", clientModel.ModelTypes.First(m => m.Name == "cat").Properties[0].Name);
+            Assert.Equal(true, clientModel.ModelTypes.First(m => m.Name == "cat").Properties[0].IsRequired);
+            Assert.Equal("color", clientModel.ModelTypes.First(m => m.Name == "cat").Properties[1].Name);
+            Assert.Equal("siamese", clientModel.ModelTypes.First(m => m.Name == "siamese").Name);
+            Assert.Equal("cat", clientModel.ModelTypes.First(m => m.Name == "siamese").BaseModelType.Name);
         }
 
         [Fact]
@@ -153,14 +163,16 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             var clientModel = modeler.Build();
 
             Assert.NotNull(clientModel);
-            Assert.Equal("Pet", clientModel.ModelTypes[0].Name);
-            Assert.Equal("dtype", clientModel.ModelTypes[0].PolymorphicDiscriminator);
-            Assert.Equal(2, clientModel.ModelTypes[0].Properties.Count);
-            Assert.Equal("id", clientModel.ModelTypes[0].Properties[0].Name);
-            Assert.Equal("description", clientModel.ModelTypes[0].Properties[1].Name);
-            Assert.Equal("Cat", clientModel.ModelTypes[1].Name);
-            Assert.Equal("Pet", clientModel.ModelTypes[1].BaseModelType.Name);
-            Assert.Equal(1, clientModel.ModelTypes[1].Properties.Count);
+            Assert.Equal("Pet", clientModel.ModelTypes.First(m => m.Name == "Pet").Name);
+            Assert.Equal("dtype", clientModel.ModelTypes.First(m => m.Name == "Pet").PolymorphicDiscriminator);
+            Assert.Equal(2, clientModel.ModelTypes.First(m => m.Name == "Pet").Properties.Count);
+            Assert.Equal("id", clientModel.ModelTypes.First(m => m.Name == "Pet").Properties[0].Name);
+            Assert.Equal("description", clientModel.ModelTypes.First(m => m.Name == "Pet").Properties[1].Name);
+            Assert.Equal("Cat", clientModel.ModelTypes.First(m => m.Name == "Cat").Name);
+            Assert.Equal("Pet", clientModel.ModelTypes.First(m => m.Name == "Cat").BaseModelType.Name);
+            Assert.Equal(1, clientModel.ModelTypes.First(m => m.Name == "Cat").Properties.Count);
+            Assert.Equal("Lizard", clientModel.ModelTypes.First(m => m.Name == "Lizard").Name);
+            Assert.Equal("lzd", clientModel.ModelTypes.First(m => m.Name == "Lizard").SerializedName);
         }
 
         [Fact]
@@ -185,9 +197,9 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             var clientModel = modeler.Build();
 
             Assert.NotNull(clientModel);
-            Assert.Equal("Product", clientModel.ModelTypes[0].Name);
-            Assert.Equal("product_id", clientModel.ModelTypes[0].Properties[0].Name);
-            Assert.Equal("String", clientModel.ModelTypes[0].Properties[0].Type.ToString());
+            Assert.Equal("Product", clientModel.ModelTypes.First(m => m.Name == "Product").Name);
+            Assert.Equal("product_id", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[0].Name);
+            Assert.Equal("String", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[0].Type.ToString());
         }
 
         [Fact]
@@ -201,9 +213,9 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             var clientModel = modeler.Build();
 
             Assert.Equal("DeleteBlob", clientModel.Methods[4].Name);
-            Assert.Equal(PrimaryType.Object, clientModel.Methods[4].ReturnType);
-            Assert.Equal(PrimaryType.Object, clientModel.Methods[4].Responses[HttpStatusCode.OK]);
-            Assert.Null(clientModel.Methods[4].Responses[HttpStatusCode.BadRequest]);
+            Assert.Equal(PrimaryType.Object, clientModel.Methods[4].ReturnType.Body);
+            Assert.Equal(PrimaryType.Object, clientModel.Methods[4].Responses[HttpStatusCode.OK].Body);
+            Assert.Null(clientModel.Methods[4].Responses[HttpStatusCode.BadRequest].Body);
         }
 
         [Fact]
@@ -231,7 +243,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.Equal("VirtualMachineGetRemoteDesktopFileResponse", clientModel.Methods[6].ReturnType.ToString());
             Assert.Equal("VirtualMachineGetRemoteDesktopFileResponse",
                 clientModel.Methods[6].Responses[HttpStatusCode.OK].ToString());
-            Assert.Null(clientModel.Methods[6].Responses[HttpStatusCode.NoContent]);
+            Assert.Null(clientModel.Methods[6].Responses[HttpStatusCode.NoContent].Body);
         }
 
         [Fact]
@@ -340,7 +352,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.NotNull(variableEnumInPath);
             Assert.Equal(variableEnumInPath.Values,
                 new[] { new EnumValue { Name = "red" }, new EnumValue { Name = "blue" }, new EnumValue { Name = "green" } }.ToList());
-            Assert.True(variableEnumInPath.IsExpandable);
+            Assert.True(variableEnumInPath.ModelAsString);
             Assert.Empty(variableEnumInPath.Name);
 
             var variableEnumInQuery =
@@ -348,7 +360,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.NotNull(variableEnumInQuery);
             Assert.Equal(variableEnumInQuery.Values,
                 new[] { new EnumValue { Name = "red" }, new EnumValue { Name = "blue" }, new EnumValue { Name = "green" }, new EnumValue { Name = "purple" } }.ToList());
-            Assert.True(variableEnumInQuery.IsExpandable);
+            Assert.True(variableEnumInQuery.ModelAsString);
             Assert.Empty(variableEnumInQuery.Name);
 
             var differentEnum =
@@ -356,7 +368,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.NotNull(differentEnum);
             Assert.Equal(differentEnum.Values,
                 new[] { new EnumValue { Name = "cyan" }, new EnumValue { Name = "yellow" } }.ToList());
-            Assert.True(differentEnum.IsExpandable);
+            Assert.True(differentEnum.ModelAsString);
             Assert.Empty(differentEnum.Name);
 
             var sameEnum =
@@ -364,7 +376,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.NotNull(sameEnum);
             Assert.Equal(sameEnum.Values,
                 new[] { new EnumValue { Name = "blue" }, new EnumValue { Name = "green" }, new EnumValue { Name = "red" } }.ToList());
-            Assert.True(sameEnum.IsExpandable);
+            Assert.True(sameEnum.ModelAsString);
             Assert.Empty(sameEnum.Name);
 
             var modelEnum =
@@ -372,7 +384,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.NotNull(modelEnum);
             Assert.Equal(modelEnum.Values,
                 new[] { new EnumValue { Name = "red" }, new EnumValue { Name = "blue" }, new EnumValue { Name = "green" } }.ToList());
-            Assert.True(modelEnum.IsExpandable);
+            Assert.True(modelEnum.ModelAsString);
             Assert.Empty(modelEnum.Name);
 
             var fixedEnum =
@@ -380,7 +392,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.NotNull(fixedEnum);
             Assert.Equal(fixedEnum.Values,
                 new[] { new EnumValue { Name = "red" }, new EnumValue { Name = "blue" }, new EnumValue { Name = "green" } }.ToList());
-            Assert.False(fixedEnum.IsExpandable);
+            Assert.False(fixedEnum.ModelAsString);
             Assert.Equal("Colors", fixedEnum.Name);
 
             var fixedEnum2 =
@@ -388,7 +400,7 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.Equal(fixedEnum2, fixedEnum);
 
             Assert.Equal(1, clientModel.EnumTypes.Count);
-            Assert.Equal("Colors", clientModel.EnumTypes[0].Name);
+            Assert.Equal("Colors", clientModel.EnumTypes.First().Name);
         }
 
         [Fact]
@@ -419,17 +431,82 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
             Assert.Equal(1, clientModel.Methods[0].Parameters[3].Constraints.Count);
             Assert.Equal("\\d{2}-\\d{2}-\\d{4}", clientModel.Methods[0].Parameters[3].Constraints[Constraint.Pattern]);
 
-            Assert.Equal("Product", clientModel.ModelTypes[0].Name);
-            Assert.Equal("display_names", clientModel.ModelTypes[0].Properties[2].Name);
-            Assert.Equal(3, clientModel.ModelTypes[0].Properties[2].Constraints.Count);
-            Assert.Equal("6", clientModel.ModelTypes[0].Properties[2].Constraints[Constraint.MaxItems]);
-            Assert.Equal("0", clientModel.ModelTypes[0].Properties[2].Constraints[Constraint.MinItems]);
-            Assert.Equal("true", clientModel.ModelTypes[0].Properties[2].Constraints[Constraint.UniqueItems]);
+            Assert.Equal("Product", clientModel.ModelTypes.First(m => m.Name == "Product").Name);
+            Assert.Equal("display_names", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[2].Name);
+            Assert.Equal(3, clientModel.ModelTypes.First(m => m.Name == "Product").Properties[2].Constraints.Count);
+            Assert.Equal("6", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[2].Constraints[Constraint.MaxItems]);
+            Assert.Equal("0", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[2].Constraints[Constraint.MinItems]);
+            Assert.Equal("true", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[2].Constraints[Constraint.UniqueItems]);
 
-            Assert.Equal("capacity", clientModel.ModelTypes[0].Properties[3].Name);
-            Assert.Equal(2, clientModel.ModelTypes[0].Properties[3].Constraints.Count);
-            Assert.Equal("100", clientModel.ModelTypes[0].Properties[3].Constraints[Constraint.ExclusiveMaximum]);
-            Assert.Equal("0", clientModel.ModelTypes[0].Properties[3].Constraints[Constraint.ExclusiveMinimum]);
+            Assert.Equal("capacity", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[3].Name);
+            Assert.Equal(2, clientModel.ModelTypes.First(m => m.Name == "Product").Properties[3].Constraints.Count);
+            Assert.Equal("100", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[3].Constraints[Constraint.ExclusiveMaximum]);
+            Assert.Equal("0", clientModel.ModelTypes.First(m => m.Name == "Product").Properties[3].Constraints[Constraint.ExclusiveMinimum]);
+        }
+
+        [Fact]
+        public void TestClientModelWithResponseHeaders()
+        {
+            var modeler = new SwaggerModeler(new Settings
+            {
+                Namespace = "Test",
+                Input = Path.Combine("Swagger", "swagger-response-headers.json")
+            });
+            var clientModel = modeler.Build();
+
+            Assert.NotNull(clientModel);
+            Assert.Equal(2, clientModel.Methods.Count);
+            Assert.Equal(2, clientModel.Methods[0].Responses.Count);
+            Assert.Equal("list-Headers", clientModel.Methods[0].Responses[HttpStatusCode.OK].Headers.Name);
+            Assert.Equal(3, ((CompositeType)clientModel.Methods[0].Responses[HttpStatusCode.OK].Headers).Properties.Count);
+            Assert.Equal("list-Headers", clientModel.Methods[0].Responses[HttpStatusCode.Created].Headers.Name);
+            Assert.Equal(3, ((CompositeType)clientModel.Methods[0].Responses[HttpStatusCode.Created].Headers).Properties.Count);
+            Assert.Equal("list-Headers", clientModel.Methods[0].ReturnType.Headers.Name);
+            Assert.Equal(3, ((CompositeType)clientModel.Methods[0].ReturnType.Headers).Properties.Count);
+
+            Assert.Equal(1, clientModel.Methods[1].Responses.Count);
+            Assert.Equal("create-Headers", clientModel.Methods[1].Responses[HttpStatusCode.OK].Headers.Name);
+            Assert.Equal(3, ((CompositeType)clientModel.Methods[1].Responses[HttpStatusCode.OK].Headers).Properties.Count);
+            Assert.Equal("create-Headers", clientModel.Methods[1].ReturnType.Headers.Name);
+            Assert.Equal(3, ((CompositeType)clientModel.Methods[1].ReturnType.Headers).Properties.Count);
+            Assert.True(clientModel.HeaderTypes.Any(c => c.Name == "list-Headers"));
+            Assert.True(clientModel.HeaderTypes.Any(c => c.Name == "create-Headers"));
+        }
+
+        [Fact]
+        public void TestCustomPaths()
+        {
+            var modeler = new SwaggerModeler(new Settings
+            {
+                Namespace = "Test",
+                Input = Path.Combine("Swagger", "swagger-x-ms-paths.json")
+            });
+            var clientModel = modeler.Build();
+
+            Assert.NotNull(clientModel);
+            Assert.Equal(3, clientModel.Methods.Count);
+            Assert.True(clientModel.Methods.All(m => m.Url == "/values/foo"));
+
+        }
+
+        [Fact]
+        public void TestSettingsFromSwagger()
+        {
+            var settings = new Settings
+            {
+                Namespace = "Test",
+                Modeler = "Swagger",
+                CodeGenerator = "CSharp",
+                Input = Path.Combine("Swagger", "swagger-x-ms-code-generation-settings.json"),
+                Header = "NONE"
+            };
+            var modeler = ExtensionsLoader.GetModeler(settings);
+            var client = modeler.Build();
+            var codeGenerator = ExtensionsLoader.GetCodeGenerator(settings) as CSharpCodeGenerator;
+            settings.Validate();
+
+            Assert.Equal("MIT", settings.Header);
+            Assert.Equal(true, codeGenerator.InternalConstructors);
         }
     }
 }

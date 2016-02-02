@@ -1,6 +1,6 @@
 package fixtures.url;
 
-import com.microsoft.rest.ServiceException;
+import fixtures.url.models.ErrorException;
 import fixtures.url.models.UriColor;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QueriesTests {
-    static AutoRestUrlTestService client;
+    private static AutoRestUrlTestService client;
 
     @BeforeClass
     public static void setup() {
@@ -22,155 +22,155 @@ public class QueriesTests {
 
     @Test
     public void getBooleanTrue() throws Exception {
-        client.getQueries().getBooleanTrue(true);
+        client.getQueriesOperations().getBooleanTrue(true);
     }
 
     @Test
     public void getBooleanFalse() throws Exception {
-        client.getQueries().getBooleanFalse(false);
+        client.getQueriesOperations().getBooleanFalse(false);
     }
 
     @Test
     public void getBooleanNull() throws Exception {
-        client.getQueries().getBooleanNull(null);
+        client.getQueriesOperations().getBooleanNull(null);
     }
 
     @Test
     public void getIntOneMillion() throws Exception {
-        client.getQueries().getIntOneMillion(1000000);
+        client.getQueriesOperations().getIntOneMillion(1000000);
     }
 
     @Test
     public void getIntNegativeOneMillion() throws Exception {
-        client.getQueries().getIntNegativeOneMillion(-1000000);
+        client.getQueriesOperations().getIntNegativeOneMillion(-1000000);
     }
 
     @Test
     public void getIntNull() throws Exception {
-        client.getQueries().getIntNull(null);
+        client.getQueriesOperations().getIntNull(null);
     }
 
     @Test
     public void getTenBillion() throws Exception {
-        client.getQueries().getTenBillion(10000000000l);
+        client.getQueriesOperations().getTenBillion(10000000000L);
     }
 
     @Test
     public void getNegativeTenBillion() throws Exception {
-        client.getQueries().getNegativeTenBillion(-10000000000l);
+        client.getQueriesOperations().getNegativeTenBillion(-10000000000L);
     }
 
     @Test
     public void getLongNull() throws Exception {
-        client.getQueries().getLongNull(null);
+        client.getQueriesOperations().getLongNull(null);
     }
 
     @Test
     public void floatScientificPositive() throws Exception {
-        client.getQueries().floatScientificPositive(1.034E+20);
+        client.getQueriesOperations().floatScientificPositive(1.034E+20);
     }
 
     @Test
     public void floatScientificNegative() throws Exception {
-        client.getQueries().floatScientificNegative(-1.034E-20);
+        client.getQueriesOperations().floatScientificNegative(-1.034E-20);
     }
 
     @Test
     public void floatNull() throws Exception {
-        client.getQueries().floatNull(null);
+        client.getQueriesOperations().floatNull(null);
     }
 
     @Test
     public void doubleDecimalPositive() throws Exception {
-        client.getQueries().doubleDecimalPositive(9999999.999);
+        client.getQueriesOperations().doubleDecimalPositive(9999999.999);
     }
 
     @Test
     public void doubleDecimalNegative() throws Exception {
-        client.getQueries().doubleDecimalNegative(-9999999.999);
+        client.getQueriesOperations().doubleDecimalNegative(-9999999.999);
     }
 
     @Test
     public void doubleNull() throws Exception {
-        client.getQueries().doubleNull(null);
+        client.getQueriesOperations().doubleNull(null);
     }
 
     @Test
     public void stringUrlEncoded() throws Exception {
-        client.getQueries().stringUrlEncoded("begin!*'();:@ &=+$,/?#[]end");
+        client.getQueriesOperations().stringUrlEncoded("begin!*'();:@ &=+$,/?#[]end");
     }
 
     @Test
     public void stringEmpty() throws Exception {
-        client.getQueries().stringEmpty("");
+        client.getQueriesOperations().stringEmpty("");
     }
 
     @Test
     public void stringNull() throws Exception {
         try {
-            client.getQueries().stringNull(null);
-        } catch (ServiceException ex) {
+            client.getQueriesOperations().stringNull(null);
+        } catch (ErrorException ex) {
             Assert.assertTrue(ex.getMessage().contains("Parameter stringPath is required"));
         }
     }
 
     @Test
     public void enumValid() throws Exception {
-        client.getQueries().enumValid(UriColor.GREEN_COLOR);
+        client.getQueriesOperations().enumValid(UriColor.GREEN_COLOR);
     }
 
     @Test
     public void enumNull() throws Exception {
         try {
-            client.getQueries().enumNull(null);
-        } catch (ServiceException ex) {
+            client.getQueriesOperations().enumNull(null);
+        } catch (ErrorException ex) {
             Assert.assertTrue(ex.getMessage().contains("Parameter enumPath is required"));
         }
     }
 
     @Test
     public void byteMultiByte() throws Exception {
-        client.getQueries().byteMultiByte("啊齄丂狛狜隣郎隣兀﨩".getBytes("UTF-8"));
+        client.getQueriesOperations().byteMultiByte("啊齄丂狛狜隣郎隣兀﨩".getBytes("UTF-8"));
     }
 
     @Test
     public void byteEmpty() throws Exception {
-        client.getQueries().byteEmpty("".getBytes("UTF-8"));
+        client.getQueriesOperations().byteEmpty("".getBytes("UTF-8"));
     }
 
     @Test
     public void byteNull() throws Exception {
         try {
-            client.getQueries().byteNull(null);
-        } catch (ServiceException ex) {
+            client.getQueriesOperations().byteNull(null);
+        } catch (ErrorException ex) {
             Assert.assertTrue(ex.getMessage().contains("Parameter bytePath is required"));
         }
     }
 
     @Test
     public void dateValid() throws Exception {
-        client.getQueries().dateValid(new LocalDate(2012, 1, 1));
+        client.getQueriesOperations().dateValid(new LocalDate(2012, 1, 1));
     }
 
     @Test
     public void dateNull() throws Exception {
         try {
-            client.getQueries().dateNull(null);
-        } catch (ServiceException ex) {
+            client.getQueriesOperations().dateNull(null);
+        } catch (ErrorException ex) {
             Assert.assertTrue(ex.getMessage().contains("Parameter datePath is required"));
         }
     }
 
     @Test
     public void dateTimeValid() throws Exception {
-        client.getQueries().dateTimeValid(new DateTime(2012, 1, 1, 1, 1, 1, DateTimeZone.UTC));
+        client.getQueriesOperations().dateTimeValid(new DateTime(2012, 1, 1, 1, 1, 1, DateTimeZone.UTC));
     }
 
     @Test
     public void dateTimeNull() throws Exception {
         try {
-            client.getQueries().dateTimeNull(null);
-        } catch (ServiceException ex) {
+            client.getQueriesOperations().dateTimeNull(null);
+        } catch (ErrorException ex) {
             Assert.assertTrue(ex.getMessage().contains("Parameter dateTimePath is required"));
         }
     }
@@ -182,17 +182,17 @@ public class QueriesTests {
         query.add("begin!*'();:@ &=+$,/?#[]end");
         query.add(null);
         query.add("");
-        client.getQueries().arrayStringCsvValid(query);
+        client.getQueriesOperations().arrayStringCsvValid(query);
     }
 
     @Test
     public void arrayStringCsvNull() throws Exception {
-        client.getQueries().arrayStringCsvNull(null);
+        client.getQueriesOperations().arrayStringCsvNull(null);
     }
 
     @Test
     public void arrayStringCsvEmpty() throws Exception {
-        client.getQueries().arrayStringCsvEmpty(new ArrayList<String>());
+        client.getQueriesOperations().arrayStringCsvEmpty(new ArrayList<String>());
     }
 
     @Test
@@ -202,7 +202,7 @@ public class QueriesTests {
         query.add("begin!*'();:@ &=+$,/?#[]end");
         query.add(null);
         query.add("");
-        client.getQueries().arrayStringSsvValid(query);
+        client.getQueriesOperations().arrayStringSsvValid(query);
     }
 
     @Test
@@ -212,7 +212,7 @@ public class QueriesTests {
         query.add("begin!*'();:@ &=+$,/?#[]end");
         query.add(null);
         query.add("");
-        client.getQueries().arrayStringTsvValid(query);
+        client.getQueriesOperations().arrayStringTsvValid(query);
     }
 
     @Test
@@ -222,6 +222,6 @@ public class QueriesTests {
         query.add("begin!*'();:@ &=+$,/?#[]end");
         query.add(null);
         query.add("");
-        client.getQueries().arrayStringPipesValid(query);
+        client.getQueriesOperations().arrayStringPipesValid(query);
     }
 }

@@ -7,18 +7,19 @@
 
 package com.microsoft.rest.credentials;
 
-import com.microsoft.rest.ServiceClient;
+import com.squareup.okhttp.OkHttpClient;
+
+import java.io.IOException;
 
 /**
  * Token based credentials for use with a REST Service Client.
  */
 public class TokenCredentials implements ServiceClientCredentials {
-
     /** The authentication scheme. */
-    private String scheme;
-    
-    /** The secure token */
-    private String token;
+    protected String scheme;
+
+    /** The secure token. */
+    protected String token;
 
     /**
      * Initializes a new instance of the TokenCredentials.
@@ -27,8 +28,7 @@ public class TokenCredentials implements ServiceClientCredentials {
      * @param token  valid token
      */
     public TokenCredentials(String scheme, String token) {
-        if (scheme == null)
-        {
+        if (scheme == null) {
             scheme = "Bearer";
         }
         this.scheme = scheme;
@@ -38,10 +38,28 @@ public class TokenCredentials implements ServiceClientCredentials {
     /**
      * Get the secure token.
      *
-     * @return the secure token
+     * @return the secure token.
+     * @throws IOException exception thrown from token acquisition operations.
      */
-    public String getToken() {
+    public String getToken() throws IOException {
         return token;
+    }
+
+    /**
+     * Refresh the secure token.
+     * @throws IOException exception thrown from token acquisition operations.
+     */
+    public void refreshToken() throws IOException {
+        // do nothing
+    }
+
+    /**
+     * Set the secure token.
+     *
+     * @param token the token string
+     */
+    public void setToken(String token) {
+        this.token = token;
     }
 
     /**
@@ -53,7 +71,8 @@ public class TokenCredentials implements ServiceClientCredentials {
         return scheme;
     }
 
-    public void applyCredentialsFilter(ServiceClient client) {
-        client.getClientInterceptors().add(new TokenCredentialsInterceptor(this));
+    @Override
+    public void applyCredentialsFilter(OkHttpClient client) {
+        client.interceptors().add(new TokenCredentialsInterceptor(this));
     }
 }

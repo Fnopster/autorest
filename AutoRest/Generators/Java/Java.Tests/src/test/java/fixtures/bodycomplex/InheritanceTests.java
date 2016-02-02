@@ -1,18 +1,15 @@
 package fixtures.bodycomplex;
 
-import fixtures.bodycomplex.models.ArrayWrapper;
 import fixtures.bodycomplex.models.Dog;
 import fixtures.bodycomplex.models.Siamese;
-import fixtures.http.models.A;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class InheritanceTests {
-    static AutoRestComplexTestService client;
+    private static AutoRestComplexTestService client;
 
     @BeforeClass
     public static void setup() {
@@ -21,7 +18,7 @@ public class InheritanceTests {
 
     @Test
     public void getValid() throws Exception {
-        Siamese result = client.getInheritance().getValid();
+        Siamese result = client.getInheritanceOperations().getValid().getBody();
         Assert.assertEquals("persian", result.getBreed());
         Assert.assertEquals("green", result.getColor());
         Assert.assertEquals(2, result.getId().intValue());
@@ -47,6 +44,6 @@ public class InheritanceTests {
         dog2.setId(-1);
         dog2.setName("Tomato");
         body.getHates().add(dog2);
-        client.getInheritance().putValid(body);
+        client.getInheritanceOperations().putValid(body);
     }
 }

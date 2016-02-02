@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
-using Microsoft.CSharp;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.NodeJS.TemplateModels;
 using Microsoft.Rest.Generator.Utilities;
+using System.Collections;
+using System.Text;
 
 namespace Microsoft.Rest.Generator.NodeJS
 {
@@ -21,7 +22,9 @@ namespace Microsoft.Rest.Generator.NodeJS
         {
             this.LoadFrom(source);
             ParameterTemplateModels = new List<ParameterTemplateModel>();
+            GroupedParameterTemplateModels = new List<ParameterTemplateModel>();
             source.Parameters.ForEach(p => ParameterTemplateModels.Add(new ParameterTemplateModel(p)));
+
             ServiceClient = serviceClient;
             if (source.Group != null)
             {
@@ -31,6 +34,59 @@ namespace Microsoft.Rest.Generator.NodeJS
             {
                 OperationName = serviceClient.Name;
             }
+
+            BuildOptionsParameterTemplateModel();
+        }
+
+        private void BuildOptionsParameterTemplateModel()
+        {
+            CompositeType optionsType;
+            optionsType = new CompositeType
+            {
+                Name = "options",
+                SerializedName = "options",
+                Documentation = "Optional Parameters."
+            };
+            var optionsParmeter = new Parameter
+            {
+                Name = "options",
+                SerializedName = "options",
+                IsRequired = false,
+                Documentation = "Optional Parameters.",
+                Location = ParameterLocation.None,
+                Type = optionsType
+            };
+
+            IEnumerable<ParameterTemplateModel> optionalParameters = LocalParameters.Where(p => !p.IsRequired);
+            foreach (ParameterTemplateModel parameter in optionalParameters)
+            {
+                Property optionalProperty = new Property
+                {
+                    IsReadOnly = false,
+                    Name = parameter.Name,
+                    IsRequired = parameter.IsRequired,
+                    DefaultValue = parameter.DefaultValue,
+                    Documentation = parameter.Documentation,
+                    Type = parameter.Type,
+                    SerializedName = parameter.SerializedName   
+                };
+                parameter.Constraints.ToList().ForEach(x => optionalProperty.Constraints.Add(x.Key, x.Value));
+                parameter.Extensions.ToList().ForEach(x => optionalProperty.Extensions.Add(x.Key, x.Value));
+                ((CompositeType)optionsParmeter.Type).Properties.Add(optionalProperty);
+            }
+
+            //Adding customHeaders to the options object
+            Property customHeaders = new Property
+            {
+                IsReadOnly = false,
+                Name = "customHeaders",
+                IsRequired = false,
+                Documentation = "Headers that will be added to the request",
+                Type = PrimaryType.Object,
+                SerializedName = "customHeaders"
+            };
+            ((CompositeType)optionsParmeter.Type).Properties.Add(customHeaders);
+            OptionsParameterTemplateModel = new ParameterTemplateModel(optionsParmeter);
         }
 
         public string OperationName { get; set; }
@@ -38,6 +94,10 @@ namespace Microsoft.Rest.Generator.NodeJS
         public ServiceClient ServiceClient { get; set; }
 
         public List<ParameterTemplateModel> ParameterTemplateModels { get; private set; }
+
+        public ParameterTemplateModel OptionsParameterTemplateModel { get; private set; }
+
+        protected List<ParameterTemplateModel> GroupedParameterTemplateModels { get; private set; }
 
         public IScopeProvider Scope
         {
@@ -76,12 +136,11 @@ namespace Microsoft.Rest.Generator.NodeJS
             get
             {
                 List<string> declarations = new List<string>();
-                foreach (var parameter in LocalParameters)
+                foreach (var parameter in LocalParametersWithOptions)
                 {
                     declarations.Add(parameter.Name);
                 }
 
-                declarations.Add("options");
                 var declaration = string.Join(", ", declarations);
                 declaration += ", ";
                 return declaration;
@@ -89,14 +148,59 @@ namespace Microsoft.Rest.Generator.NodeJS
         }
 
         /// <summary>
-        /// Gets the expression for response body initialization 
+        /// Generate the method parameter declarations for a method, using TypeScript declaration syntax
+        /// <param name="includeOptions">whether the ServiceClientOptions parameter should be included</param>
         /// </summary>
-        public virtual string InitializeResponseBody
+        public string MethodParameterDeclarationTS(bool includeOptions)
         {
-            get
+            StringBuilder declarations = new StringBuilder();
+
+            bool first = true;
+            IEnumerable<ParameterTemplateModel> requiredParameters = LocalParameters.Where(p => p.IsRequired);
+            foreach (var parameter in requiredParameters)
             {
-                return string.Empty;
+                if (!first)
+                    declarations.Append(", ");
+
+                declarations.Append(parameter.Name);
+                declarations.Append(": ");
+
+                // For date/datetime parameters, use a union type to reflect that they can be passed as a JS Date or a string.
+                var type = parameter.Type;
+                if (type == PrimaryType.Date || type == PrimaryType.DateTime)
+                    declarations.Append("Date|string");
+                else declarations.Append(type.TSType(false));
+
+                first = false;
             }
+
+            if (includeOptions)
+            {
+                if (!first)
+                    declarations.Append(", ");
+                declarations.Append("options: { ");
+                var optionalParameters = ((CompositeType)OptionsParameterTemplateModel.Type).Properties;
+                for(int i = 0; i < optionalParameters.Count; i++)
+                {
+                    if (i != 0)
+                    {
+                        declarations.Append(", ");
+                    }
+                    declarations.Append(optionalParameters[i].Name);
+                    declarations.Append("? : ");
+                    if (optionalParameters[i].Name.Equals("customHeaders", StringComparison.OrdinalIgnoreCase))
+                    {
+                        declarations.Append("{ [headerName: string]: string; }");
+                    }
+                    else
+                    {
+                        declarations.Append(optionalParameters[i].Type.TSType(false));
+                    }
+                }
+                declarations.Append(" }");
+            }
+
+            return declarations.ToString();
         }
 
         /// <summary>
@@ -113,16 +217,49 @@ namespace Microsoft.Rest.Generator.NodeJS
         }
 
         /// <summary>
-        /// Get the parameters that are actually method parameters in the order they appear in the method signature
-        /// exclude global parameters
+        /// Generate the method parameter declarations with callback for a method, using TypeScript method syntax
+        /// <param name="includeOptions">whether the ServiceClientOptions parameter should be included</param>
         /// </summary>
-        public IEnumerable<ParameterTemplateModel> LocalParameters
+        public string MethodParameterDeclarationWithCallbackTS(bool includeOptions)
+        {
+            //var parameters = MethodParameterDeclarationTS(includeOptions);
+            var returnTypeTSString = ReturnType.Body == null ? "void" : ReturnType.Body.TSType(false);
+
+            StringBuilder parameters = new StringBuilder();
+            parameters.Append(MethodParameterDeclarationTS(includeOptions));
+
+            if (parameters.Length > 0)
+                parameters.Append(", ");
+
+            parameters.Append("callback: ServiceCallback<" + returnTypeTSString + ">");
+            return parameters.ToString();
+        }
+
+        /// <summary>
+        /// Get the parameters that are actually method parameters in the order they appear in the method signature
+        /// exclude global parameters.
+        /// </summary>
+        internal IEnumerable<ParameterTemplateModel> LocalParameters
         {
             get
             {
                 return ParameterTemplateModels.Where(
                     p => p != null && p.ClientProperty == null && !string.IsNullOrWhiteSpace(p.Name))
                     .OrderBy(item => !item.IsRequired);
+            }
+        }
+
+        /// <summary>
+        /// Get the parameters that are actually method parameters in the order they appear in the method signature
+        /// exclude global parameters. All the optional parameters are pushed into the second last "options" parameter.
+        /// </summary>
+        public IEnumerable<ParameterTemplateModel> LocalParametersWithOptions
+        {
+            get
+            {
+                List<ParameterTemplateModel> requiredParamsWithOptionsList = LocalParameters.Where(p => p.IsRequired).ToList();
+                requiredParamsWithOptionsList.Add(OptionsParameterTemplateModel);
+                return requiredParamsWithOptionsList as IEnumerable<ParameterTemplateModel>;
             }
         }
 
@@ -136,9 +273,9 @@ namespace Microsoft.Rest.Generator.NodeJS
             {
                 var traversalStack = new Stack<ParameterTemplateModel>();
                 var visitedHash = new Dictionary<string, ParameterTemplateModel>();
-                var retValue = new List<ParameterTemplateModel>();
+                var retValue = new Stack<ParameterTemplateModel>();
 
-                foreach (var param in LocalParameters)
+                foreach (var param in LocalParametersWithOptions)
                 {
                     traversalStack.Push(param);
                 }
@@ -146,12 +283,17 @@ namespace Microsoft.Rest.Generator.NodeJS
                 while (traversalStack.Count() != 0)
                 {
                     var param = traversalStack.Pop();
-                    retValue.Add(param);
+                    if (!(param.Type is CompositeType))
+                    {
+                        retValue.Push(param);
+                    }
+
                     if (param.Type is CompositeType)
                     {
                         if (!visitedHash.ContainsKey(param.Type.Name))
                         {
-                            foreach (var property in ((CompositeType)param.Type).Properties)
+                            traversalStack.Push(param);
+                            foreach (var property in param.ComposedProperties)
                             {
                                 if (property.IsReadOnly)
                                 {
@@ -164,13 +306,25 @@ namespace Microsoft.Rest.Generator.NodeJS
                                 propertyParameter.Documentation = property.Documentation;
                                 traversalStack.Push(new ParameterTemplateModel(propertyParameter));
                             }
+
                             visitedHash.Add(param.Type.Name, new ParameterTemplateModel(param));
+                        }
+                        else
+                        {
+                            retValue.Push(param);
                         }
                     }
                 }
 
-                return retValue.OrderBy(p => p.Name).ToList();
+                return retValue.ToList();
             }
+        }
+
+        public static string ConstructParameterDocumentation(string documentation)
+        {
+            var builder = new IndentedStringBuilder("  ");
+            return builder.AppendLine(documentation)
+                          .AppendLine(" * ").ToString();
         }
 
         /// <summary>
@@ -180,17 +334,20 @@ namespace Microsoft.Rest.Generator.NodeJS
         {
             get
             {
-                if (ReturnType != null)
+                if (ReturnType.Body != null)
                 {
-                    return ReturnType.Name;
+                    return ReturnType.Body.Name;
                 }
-                return "void";
+                else
+                {
+                    return "null";
+                }
             }
         }
 
         /// <summary>
         /// The Deserialization Error handling code block that provides a useful Error 
-        /// message when exceptions occure in deserialization along with the request 
+        /// message when exceptions occur in deserialization along with the request 
         /// and response object
         /// </summary>
         public string DeserializationError
@@ -201,8 +358,8 @@ namespace Microsoft.Rest.Generator.NodeJS
                 var errorVariable = this.Scope.GetVariableName("deserializationError");
                 return builder.AppendLine("var {0} = new Error(util.format('Error \"%s\" occurred in " +
                     "deserializing the responseBody - \"%s\"', error, responseBody));", errorVariable)
-                    .AppendLine("{0}.request = httpRequest;", errorVariable)
-                    .AppendLine("{0}.response = response;", errorVariable)
+                    .AppendLine("{0}.request = msRest.stripRequest(httpRequest);", errorVariable)
+                    .AppendLine("{0}.response = msRest.stripResponse(response);", errorVariable)
                     .AppendLine("return callback({0});", errorVariable).ToString();
             }
         }
@@ -253,140 +410,84 @@ namespace Microsoft.Rest.Generator.NodeJS
             return typeName.ToLower(CultureInfo.InvariantCulture);
         }
 
-        public string GetDeserializationString(IType type, string valueReference = "result.body")
+        public string GetDeserializationString(IType type, string valueReference = "result", string responseVariable = "parsedResponse")
         {
-            CompositeType composite = type as CompositeType;
-            SequenceType sequence = type as SequenceType;
-            DictionaryType dictionary = type as DictionaryType;
-            PrimaryType primary = type as PrimaryType;
-            EnumType enumType = type as EnumType;
             var builder = new IndentedStringBuilder("  ");
-            if (primary != null)
+            if (type is CompositeType)
             {
-                if (primary == PrimaryType.DateTime ||
-                    primary == PrimaryType.Date)
-                {
-                    builder.AppendLine("{0} = new Date({0});", valueReference);
-                }
-                else if (primary == PrimaryType.ByteArray)
-                {
-                    builder.AppendLine("{0} = new Buffer({0}, 'base64');", valueReference);
-                }
-            }
-            else if (IsSpecialDeserializationRequired(sequence))
-            {
-                builder.AppendLine("for (var i = 0; i < {0}.length; i++) {{", valueReference)
-                    .Indent()
-                    .AppendLine("if ({0}[i] !== null && {0}[i] !== undefined) {{", valueReference)
-                        .Indent();
-                // Loop through the sequence if each property is Date, DateTime or ByteArray 
-                // as they need special treatment for deserialization
-                if (sequence.ElementType == PrimaryType.DateTime ||
-                    sequence.ElementType == PrimaryType.Date)
-                {
-                    builder.AppendLine("{0}[i] = new Date({0}[i]);", valueReference);
-                }
-                else if (sequence.ElementType == PrimaryType.ByteArray)
-                {
-                    builder.AppendLine("{0}[i] = new Buffer({0}[i], 'base64');", valueReference);
-                }
-                else if (sequence.ElementType is CompositeType)
-                {
-                    builder.AppendLine(GetDeserializationString(sequence.ElementType,
-                        string.Format(CultureInfo.InvariantCulture, "{0}[i]", valueReference)));
-                }
-
-                builder.Outdent()
-                        .AppendLine("}")
-                        .Outdent()
-                    .AppendLine("}");
-            }
-            else if (IsSpecialDeserializationRequired(dictionary))
-            {
-                builder.AppendLine("for (var property in {0}) {{", valueReference)
-                    .Indent()
-                    .AppendLine("if ({0}[property] !== null && {0}[property] !== undefined) {{", valueReference)
-                        .Indent();
-                if (dictionary.ValueType == PrimaryType.DateTime ||
-                    dictionary.ValueType == PrimaryType.Date)
-                {
-                    builder.AppendLine("{0}[property] = new Date({0}[property]);", valueReference);
-                }
-                else if (dictionary.ValueType == PrimaryType.ByteArray)
-                {
-                    builder.AppendLine("{0}[property] = new Buffer({0}[property], 'base64');", valueReference);
-                }
-                else if (dictionary.ValueType is CompositeType)
-                {
-                    builder.AppendLine(GetDeserializationString(dictionary.ValueType,
-                        string.Format(CultureInfo.InvariantCulture, "{0}[property]", valueReference)));
-                }
-                builder.Outdent()
-                        .AppendLine("}")
-                        .Outdent()
-                    .AppendLine("}");
-            }
-            else if (composite != null)
-            {
-                if (!string.IsNullOrEmpty(composite.PolymorphicDiscriminator))
-                {
-                    builder.AppendLine("if({0}['{1}'] !== null && {0}['{1}'] !== undefined && client._models.discriminators[{0}['{1}']]) {{",
-                        valueReference,
-                        composite.PolymorphicDiscriminator)
-                        .Indent()
-                            .AppendLine("{0} = client._models.discriminators[{0}['{1}']].deserialize({0});",
-                                valueReference,
-                                composite.PolymorphicDiscriminator)
-                            .Outdent()
-                        .AppendLine("} else {")
-                        .Indent()
-                            .AppendLine("throw new Error('No discriminator field \"{0}\" was found in response.');",
-                                composite.PolymorphicDiscriminator)
-                            .Outdent()
-                        .AppendLine("}");
-                }
-                else
-                {
-                    builder.AppendLine("{0} = client._models['{1}'].deserialize({0});", valueReference, type.Name);
-                }
-            }
-            else if (enumType != null)
-            {
-                //Do No special deserialization
+                builder.AppendLine("var resultMapper = new client.models['{0}']().mapper();", type.Name);
             }
             else
             {
-                return string.Empty;
+                builder.AppendLine("var resultMapper = {{{0}}};", type.ConstructMapper(responseVariable));
             }
+            builder.AppendLine("{1} = client.deserialize(resultMapper, {0}, '{1}');", responseVariable, valueReference);
             return builder.ToString();
         }
 
-        /// <summary>
-        /// If the element type of a sequenece or value type of a dictionary 
-        /// contains one of the following special types then it needs to be 
-        /// deserialized. The special types are: Date, DateTime, ByteArray 
-        /// and CompositeType
-        /// </summary>
-        /// <param name="type">The type to determine if special deserialization is required</param>
-        /// <returns>True if special deserialization is required. False, otherwise.</returns>
-        private static bool IsSpecialDeserializationRequired(IType type)
+        public string ValidationString
         {
-            PrimaryType[] validTypes = new PrimaryType[] { PrimaryType.DateTime, PrimaryType.Date, PrimaryType.ByteArray };
-            SequenceType sequence = type as SequenceType;
-            DictionaryType dictionary = type as DictionaryType;
-            bool result = false;
-            if (sequence != null &&
-                (validTypes.Any(t => t == sequence.ElementType) || sequence.ElementType is CompositeType))
+            get
             {
-                result = true;
+                var builder = new IndentedStringBuilder("  ");
+                foreach (var parameter in ParameterTemplateModels)
+                {
+                    if ((HttpMethod == HttpMethod.Patch && parameter.Type is CompositeType))
+                    {
+                        if (parameter.IsRequired)
+                        {
+                            builder.AppendLine("if ({0} === null || {0} === undefined) {{", parameter.Name)
+                                     .Indent()
+                                     .AppendLine("throw new Error('{0} cannot be null or undefined.');", parameter.Name)
+                                   .Outdent()
+                                   .AppendLine("}");
+                        }
+                    }
+                    else
+                    {
+                        builder.AppendLine(parameter.Type.ValidateType(Scope, parameter.Name, parameter.IsRequired));
+                        if (parameter.Constraints != null && parameter.Constraints.Count > 0 && parameter.Location != ParameterLocation.Body)
+                        {
+                            builder.AppendLine("if ({0} !== null && {0} !== undefined) {{", parameter.Name).Indent();
+                            builder = parameter.Type.AppendConstraintValidations(parameter.Name, parameter.Constraints, builder);
+                            builder.Outdent().AppendLine("}");
+                        }        
+                    }
+                }
+                return builder.ToString();
             }
-            else if (dictionary != null &&
-                (validTypes.Any(t => t == dictionary.ValueType) || dictionary.ValueType is CompositeType))
+        }
+
+        public string DeserializeResponse(IType type, string valueReference = "result", string responseVariable = "parsedResponse")
+        {
+            if (type == null)
             {
-                result = true;
+                throw new ArgumentNullException("type");
             }
 
-            return result;
+            var builder = new IndentedStringBuilder("  ");
+            builder.AppendLine("var {0} = null;", responseVariable)
+                   .AppendLine("try {")
+                   .Indent()
+                     .AppendLine("{0} = JSON.parse(responseBody);", responseVariable)
+                     .AppendLine("{0} = JSON.parse(responseBody);", valueReference);
+            var deserializeBody = GetDeserializationString(type, valueReference, responseVariable);
+            if (!string.IsNullOrWhiteSpace(deserializeBody))
+            {
+                builder.AppendLine("if ({0} !== null && {0} !== undefined) {{", responseVariable)
+                         .Indent()
+                         .AppendLine(deserializeBody)
+                       .Outdent()
+                       .AppendLine("}");
+            }
+            builder.Outdent()
+                   .AppendLine("} catch (error) {")
+                     .Indent()
+                     .AppendLine(DeserializationError)
+                   .Outdent()
+                   .AppendLine("}");
+
+            return builder.ToString();
         }
 
         /// <summary>
@@ -394,8 +495,11 @@ namespace Microsoft.Rest.Generator.NodeJS
         /// </summary>
         public ParameterTemplateModel RequestBody
         {
-            get { return ParameterTemplateModels.FirstOrDefault(p => p.Location == ParameterLocation.Body); }
-        }
+            get
+            {
+                return this.Body != null ? new ParameterTemplateModel(this.Body) : null;
+            }
+        }        
 
         /// <summary>
         /// Generate a reference to the ServiceClient
@@ -403,15 +507,6 @@ namespace Microsoft.Rest.Generator.NodeJS
         public string ClientReference
         {
             get { return Group == null ? "this" : "this.client"; }
-        }
-
-        // TODO: no callers. Is this needed for NodeJS generator?
-        public string GetExtensionParameters(string methodParameters)
-        {
-            string operationsParameter = "this I" + OperationName + " operations";
-            return string.IsNullOrWhiteSpace(methodParameters)
-                ? operationsParameter
-                : operationsParameter + ", " + methodParameters;
         }
 
         public static string GetStatusCodeReference(HttpStatusCode code)
@@ -456,7 +551,7 @@ namespace Microsoft.Rest.Generator.NodeJS
         /// <returns>True if a query string is possible given the method parameters, otherwise false</returns>
         protected virtual bool HasQueryParameters()
         {
-            return ParameterTemplateModels.Any(p => p.Location == ParameterLocation.Query);
+            return LogicalParameters.Any(p => p.Location == ParameterLocation.Query);
         }
 
         /// <summary>
@@ -472,7 +567,7 @@ namespace Microsoft.Rest.Generator.NodeJS
             }
 
             builder.AppendLine("var queryParameters = [];");
-            foreach (var queryParameter in ParameterTemplateModels
+            foreach (var queryParameter in LogicalParameters
                 .Where(p => p.Location == ParameterLocation.Query))
             {
                 var queryAddFormat = "queryParameters.push('{0}=' + encodeURIComponent({1}));";
@@ -508,7 +603,7 @@ namespace Microsoft.Rest.Generator.NodeJS
                 throw new ArgumentNullException("builder");
             }
 
-            foreach (var pathParameter in ParameterTemplateModels.Where(p => p.Location == ParameterLocation.Path))
+            foreach (var pathParameter in LogicalParameters.Where(p => p.Location == ParameterLocation.Path))
             {
                 var pathReplaceFormat = "{0} = {0}.replace('{{{1}}}', encodeURIComponent({2}));";
                 if (pathParameter.SkipUrlEncoding())
@@ -545,5 +640,270 @@ namespace Microsoft.Rest.Generator.NodeJS
                 return string.Empty;
             }
         }
-    }
+
+        public string ConstructRequestBodyMapper
+        {
+            get
+            {
+                var builder = new IndentedStringBuilder("  ");
+                if (RequestBody.Type is CompositeType)
+                {
+                    builder.AppendLine("var requestModelMapper = new client.models['{0}']().mapper();", RequestBody.Type.Name);
+                }
+                else
+                {
+                    builder.AppendLine("var requestModelMapper = {{{0}}};",
+                        RequestBody.Type.ConstructMapper(RequestBody.SerializedName, RequestBody.IsRequired,
+                        RequestBody.Constraints, RequestBody.DefaultValue));
+                }
+                return builder.ToString();
+            }
+        }
+
+        public virtual string InitializeResult
+        {
+            get
+            {
+                return string.Empty;
+            }
+        }
+
+        public string ReturnTypeInfo
+        {
+            get
+            {
+                string result = null;
+
+                if (ReturnType.Body is EnumType)
+                {
+                    var returnBodyType = ReturnType.Body as EnumType;
+
+                    string enumValues = "";
+                    for (var i = 0; i < returnBodyType.Values.Count; i++)
+                    {
+                        if (i == returnBodyType.Values.Count - 1)
+                        {
+                            enumValues += returnBodyType.Values[i].SerializedName;
+                        }
+                        else
+                        {
+                            enumValues += returnBodyType.Values[i].SerializedName + ", ";
+                        }
+                    }
+                    result = string.Format(CultureInfo.InvariantCulture,
+                        "Possible values for result are - {0}.", enumValues);
+                }
+                else if (ReturnType.Body is CompositeType)
+                {
+                    result = string.Format(CultureInfo.InvariantCulture,
+                        "See {{@link {0}}} for more information.", ReturnTypeString);
+                }
+
+                return result;
+            }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
+        public string DocumentReturnTypeString
+        {
+            get
+            {
+                string typeName = "object";
+                IType returnBodyType = ReturnType.Body;
+
+                if (returnBodyType == null)
+                {
+                    typeName = "null";
+                }
+                else if (returnBodyType is PrimaryType)
+                {
+                    typeName = returnBodyType.Name;
+                }
+                else if (returnBodyType is SequenceType)
+                {
+                    typeName = "array";
+                }
+                else if (returnBodyType is EnumType)
+                {
+                    typeName = PrimaryType.String.Name;
+                }
+                else if (returnBodyType is CompositeType || returnBodyType is DictionaryType)
+                {
+                    typeName = PrimaryType.Object.Name;
+                }
+
+                return typeName.ToLower(CultureInfo.InvariantCulture);
+            }
+        }
+
+        /// <summary>
+        /// Generates input mapping code block.
+        /// </summary>
+        /// <returns></returns>
+        public virtual string BuildInputMappings()
+        {
+            var builder = new IndentedStringBuilder("  ");
+            if (InputParameterTransformation.Count > 0)
+            {
+                if (AreWeFlatteningParameters())
+                {
+                    return BuildFlattenParameterMappings();
+                }
+                else
+                {
+                    return BuildGroupedParameterMappings();
+                }
+            }
+            return builder.ToString();
+        }
+
+        public virtual bool AreWeFlatteningParameters()
+        {
+            bool result = true;
+            foreach(var transformation in InputParameterTransformation)
+            {
+                var compositeOutputParameter = transformation.OutputParameter.Type as CompositeType;
+                if (compositeOutputParameter == null)
+                {
+                    result = false;
+                    break;
+                }
+                else
+                {
+                    foreach (var poperty in compositeOutputParameter.ComposedProperties.Select(p => p.Name))
+                    {
+                        if (!transformation.ParameterMappings.Select(m => m.InputParameter.Name).Contains(poperty))
+                        {
+                            result = false;
+                            break;
+                        }
+                    }
+                    if (!result) break;
+                }
+            }
+
+            return result;
+        }
+
+        public virtual string BuildFlattenParameterMappings()
+        {
+            var builder = new IndentedStringBuilder();
+            foreach (var transformation in InputParameterTransformation)
+            {
+                builder.AppendLine("var {0};",
+                        transformation.OutputParameter.Name);
+
+                builder.AppendLine("if ({0})", BuildNullCheckExpression(transformation))
+                       .AppendLine("{").Indent();
+
+                if (transformation.ParameterMappings.Any(m => !string.IsNullOrEmpty(m.OutputParameterProperty)) &&
+                    transformation.OutputParameter.Type is CompositeType)
+                {
+                    builder.AppendLine("{0} = new client.models['{1}']();",
+                        transformation.OutputParameter.Name,
+                        transformation.OutputParameter.Type.Name);
+                }
+
+                foreach (var mapping in transformation.ParameterMappings)
+                {
+                    builder.AppendLine("{0}{1};",
+                        transformation.OutputParameter.Name,
+                        mapping);
+                }
+
+                builder.Outdent()
+                       .AppendLine("}");
+            }
+
+            return builder.ToString();
+        }
+
+        public virtual string BuildGroupedParameterMappings()
+        {
+            var builder = new IndentedStringBuilder("  ");
+            if (InputParameterTransformation.Count > 0)
+            {
+                // Declare all the output paramaters outside the try block
+                foreach (var transformation in InputParameterTransformation)
+                {
+                    builder.AppendLine("var {0};", transformation.OutputParameter.Name);
+                }
+                builder.AppendLine("try {").Indent();
+                foreach (var transformation in InputParameterTransformation)
+                {
+                    builder.AppendLine("if ({0})", BuildNullCheckExpression(transformation))
+                           .AppendLine("{").Indent();
+                    var outputParameter = transformation.OutputParameter;
+                    bool noCompositeTypeInitialized = true;
+                    if (transformation.ParameterMappings.Any(m => !string.IsNullOrEmpty(m.OutputParameterProperty)) &&
+                        transformation.OutputParameter.Type is CompositeType)
+                    {
+                        builder.AppendLine("{0} = new client.models['{1}']();",
+                            transformation.OutputParameter.Name,
+                            transformation.OutputParameter.Type.Name);
+                        noCompositeTypeInitialized = false;
+                    }
+
+                    foreach (var mapping in transformation.ParameterMappings)
+                    {
+                        builder.AppendLine("{0}{1};",
+                            transformation.OutputParameter.Name,
+                            mapping);
+                        if (noCompositeTypeInitialized)
+                        {
+                            // If composite type is initialized based on the above logic then it shouuld not be validated.
+                            builder.AppendLine(outputParameter.Type.ValidateType(Scope, outputParameter.Name, outputParameter.IsRequired));
+                        }
+                    }
+
+                    builder.Outdent()
+                           .AppendLine("}");
+                }
+                builder.Outdent()
+                       .AppendLine("} catch (error) {")
+                         .Indent()
+                         .AppendLine("return callback(error);")
+                       .Outdent()
+                       .AppendLine("}");
+            }
+            return builder.ToString();
+        }
+
+        private static string BuildNullCheckExpression(ParameterTransformation transformation)
+        {
+            if (transformation == null)
+            {
+                throw new ArgumentNullException("transformation");
+            }
+
+            return string.Join(" || ",
+                transformation.ParameterMappings.Select(m =>
+                    string.Format(CultureInfo.InvariantCulture,
+                    "({0} !== null && {0} !== undefined)", m.InputParameter.Name)));
+        }
+
+        public string  BuildOptionalMappings()
+        {
+            IEnumerable<Property> optionalParameters = 
+                ((CompositeType)OptionsParameterTemplateModel.Type)
+                .Properties.Where(p => p.Name != "customHeaders");
+            var builder = new IndentedStringBuilder("  ");
+            foreach (var optionalParam in optionalParameters)
+            {
+                string defaultValue = "undefined";
+                if (!string.IsNullOrWhiteSpace(optionalParam.DefaultValue))
+                {
+                    defaultValue = optionalParam.DefaultValue;
+                    if (optionalParam.Type == PrimaryType.String || optionalParam.Type is EnumType)
+                    {
+                        defaultValue = string.Format(CultureInfo.InvariantCulture, 
+                            "'{0}'", optionalParam.DefaultValue);
+                    }
+                }
+                builder.AppendLine("var {0} = ({1} && {1}.{2} !== undefined) ? {1}.{2} : {3};", 
+                    optionalParam.Name, OptionsParameterTemplateModel.Name, optionalParam.Name, defaultValue);
+            }
+            return builder.ToString();
+        }
+    }        
 }

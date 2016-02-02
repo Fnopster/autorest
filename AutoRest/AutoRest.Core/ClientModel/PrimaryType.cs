@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Rest.Generator.ClientModel
@@ -94,6 +93,11 @@ namespace Microsoft.Rest.Generator.ClientModel
             get { return KnownTypes[SupportedPrimaryType.DateTime]; }
         }
 
+        public static PrimaryType DateTimeRfc1123
+        {
+            get { return KnownTypes[SupportedPrimaryType.DateTimeRfc1123]; }
+        }
+
         public static PrimaryType TimeSpan
         {
             get { return KnownTypes[SupportedPrimaryType.TimeSpan]; }
@@ -102,6 +106,11 @@ namespace Microsoft.Rest.Generator.ClientModel
         public static PrimaryType Boolean
         {
             get { return KnownTypes[SupportedPrimaryType.Boolean]; }
+        }
+
+        public static PrimaryType Credentials
+        {
+            get { return KnownTypes[SupportedPrimaryType.Credentials]; }
         }
 
         /// <summary>
@@ -164,8 +173,10 @@ namespace Microsoft.Rest.Generator.ClientModel
             ByteArray,
             Date,
             DateTime,
+            DateTimeRfc1123,
             TimeSpan,
-            Boolean
+            Boolean,
+            Credentials
         }
     }
 }

@@ -153,13 +153,13 @@
             "schema": {
               "$ref": "#/definitions/ResourceCollection"
             }
-          }
-        },
-        "default": {
-          "description": "Unexpected error",
-          "schema": {
-            "$ref": "#/definitions/Error"
-          }
+          },
+          "default": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          } 
         }
       }
     }
@@ -177,7 +177,7 @@
       }
     },
     "Resource": {
-      "x-ms-external": true,
+      "x-ms-azure-resource": true,
       "properties": {
         "id": {
           "type": "string",
@@ -203,7 +203,7 @@
           "type": "string",
           "description": "Resource Name",
           "readOnly": true
-        },
+        }
       }
     },
     "FlattenedProduct": {

@@ -16,8 +16,9 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
         /// Initializes a new instance of the AzureModelTemplateModel class.
         /// </summary>
         /// <param name="source">The object to create model from.</param>
-        public AzureModelTemplateModel(CompositeType source)
-            : base(source)
+        /// <param name="allTypes">The list of all model types; Used to implement polymorphism.</param>
+        public AzureModelTemplateModel(CompositeType source, ISet<CompositeType> allTypes)
+            : base(source, allTypes)
         {
         }
 
@@ -31,7 +32,8 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
             {
                 string typeName = this.BaseModelType.Name;
 
-                if (this.BaseModelType.Extensions.ContainsKey(AzureCodeGenerator.ExternalExtension))
+                if (this.BaseModelType.Extensions.ContainsKey(AzureExtensions.ExternalExtension) ||
+                    this.BaseModelType.Extensions.ContainsKey(AzureExtensions.AzureResourceExtension))
                 {
                     typeName = "MsRestAzure::" + typeName;
                 }
@@ -50,9 +52,9 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
             get
             {
                 return new List<string>
-				{
-					"MsRestAzure"
-				};
+                {
+                    "MsRestAzure"
+                };
             }
         }
 
@@ -61,9 +63,9 @@ namespace Microsoft.Rest.Generator.Azure.Ruby
             get
             {
                 return new List<string>
-				{
-					"MsRestAzure"
-				};
+                {
+                    "MsRestAzure"
+                };
             }
         }
     }

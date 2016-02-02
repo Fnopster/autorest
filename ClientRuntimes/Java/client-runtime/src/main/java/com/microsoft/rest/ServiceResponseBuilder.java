@@ -7,62 +7,98 @@
 
 package com.microsoft.rest;
 
-import com.microsoft.rest.serializer.JacksonHelper;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
-import retrofit.converter.Converter;
-import retrofit.mime.TypedInput;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.microsoft.rest.serializer.JacksonMapperAdapter;
+import com.squareup.okhttp.ResponseBody;
+import retrofit.Response;
+import retrofit.Retrofit;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * The builder for building a {@link ServiceResponse}.
+ *
+ * @param <T> The return type the caller expects from the REST response.
+ * @param <E> the exception to throw in case of error.
  */
-public class ServiceResponseBuilder<T> {
-    private Map<Integer, Type> responseTypes;
-    private Converter converter;
+public class ServiceResponseBuilder<T, E extends AutoRestException> {
+    /**
+     * A mapping of HTTP status codes and their corresponding return types.
+     */
+    protected Map<Integer, Type> responseTypes;
+
+    /**
+     * The exception type to thrown in case of error.
+     */
+    protected Class<? extends AutoRestException> exceptionType;
+
+    /**
+     * The mapperAdapter used for deserializing the response.
+     */
+    protected JacksonMapperAdapter mapperAdapter;
 
     /**
      * Create a ServiceResponseBuilder instance.
      */
     public ServiceResponseBuilder() {
-        this(new HashMap<Integer, Type>(), JacksonHelper.getConverter());
+        this(new JacksonMapperAdapter());
     }
 
     /**
      * Create a ServiceResponseBuilder instance.
      *
-     * @param responseTypes a mapping of response status codes and response destination types.
-     * @param converter JSON converter to use.
+     * @param mapperAdapter the serialization utils to use for deserialization operations
      */
-    public ServiceResponseBuilder(Map<Integer, Type> responseTypes, Converter converter) {
+    public ServiceResponseBuilder(JacksonMapperAdapter mapperAdapter) {
+        this(mapperAdapter, new HashMap<Integer, Type>());
+    }
+
+    /**
+     * Create a ServiceResponseBuilder instance.
+     *
+     * @param mapperAdapter the serialization utils to use for deserialization operations
+     * @param responseTypes a mapping of response status codes and response destination types
+     */
+    public ServiceResponseBuilder(JacksonMapperAdapter mapperAdapter, Map<Integer, Type> responseTypes) {
+        this.mapperAdapter = mapperAdapter;
         this.responseTypes = responseTypes;
-        this.converter = converter;
+        this.exceptionType = ServiceException.class;
+        this.responseTypes.put(0, Object.class);
     }
 
     /**
      * Register a mapping from a response status code to a response destination type.
      *
      * @param statusCode the status code.
-     * @param responseType the response destination type.
+     * @param type the type to deserialize.
      * @return the same builder instance.
      */
-    public ServiceResponseBuilder<T> register(int statusCode, Type responseType) {
-        this.responseTypes.put(statusCode, responseType);
+    public ServiceResponseBuilder<T, E> register(int statusCode, final Type type) {
+        this.responseTypes.put(statusCode, type);
         return this;
     }
 
     /**
      * Register a destination type for errors with models.
      *
-     * @param errorType the error model type.
+     * @param type the type to deserialize.
      * @return the same builder instance.
      */
-    public ServiceResponseBuilder<T> registerError(Type errorType) {
-        this.responseTypes.put(0, errorType);
+    public ServiceResponseBuilder<T, E> registerError(final Class<? extends AutoRestException> type) {
+        this.exceptionType = type;
+        try {
+            Field f = type.getDeclaredField("body");
+            this.responseTypes.put(0, f.getType());
+        } catch (NoSuchFieldException e) {
+            // AutoRestException always has a body. Register Object as a fallback plan.
+            this.responseTypes.put(0, Object.class);
+        }
         return this;
     }
 
@@ -73,7 +109,7 @@ public class ServiceResponseBuilder<T> {
      * @param responseTypes the mapping from response status codes to response types.
      * @return the same builder instance.
      */
-    public ServiceResponseBuilder<T> registerAll(Map<Integer, Type> responseTypes) {
+    public ServiceResponseBuilder<T, E> registerAll(Map<Integer, Type> responseTypes) {
         this.responseTypes.putAll(responseTypes);
         return this;
     }
@@ -87,68 +123,173 @@ public class ServiceResponseBuilder<T> {
      *     be considered valid and deserialized into the specified destination
      *     type. If the status code is not registered, the response will be
      *     considered invalid and deserialized into the specified error type if
-     *     there is one. A ServiceException is also thrown.
+     *     there is one. An AutoRestException is also thrown.
      * </p>
      *
      * @param response the {@link Response} instance from REST call
-     * @param error the {@link RetrofitError} instance from REST call
+     * @param retrofit the {@link Retrofit} instance from REST call
      * @return a ServiceResponse instance of generic type {@link T}
-     * @throws ServiceException all exceptions will be wrapped in ServiceException
+     * @throws E exceptions from the REST call
+     * @throws IOException exceptions from deserialization
      */
     @SuppressWarnings("unchecked")
-    public ServiceResponse<T> build(Response response, RetrofitError error) throws ServiceException {
+    public ServiceResponse<T> build(Response<ResponseBody> response, Retrofit retrofit) throws E, IOException {
         if (response == null) {
-            throw new ServiceException(error);
+            return null;
         }
 
-        ServiceResponse<T> result;
-        try {
-            TypedInput responseContent = response.getBody();
-            int statusCode = response.getStatus();
-            if (responseTypes.containsKey(statusCode)) {
-                // Pre-defined successful status code
-                T body = null;
-                Type type = responseTypes.get(statusCode);
-                if (type != null && type == InputStream.class) {
-                    body = (T) responseContent.in();
-                }
-                else if (type != null && type != Void.class && responseContent.length() > 0) {
-                    body = (T) this.converter.fromBody(responseContent, type);
-                }
-                result = new ServiceResponse<T>(body, response);
-            } else if (error == null && responseTypes.isEmpty()) {
-                // no pre-defined successful status code, use retrofit default
-                result = new ServiceResponse<T>(null, response);
-            } else if (error == null && responseTypes.size() == 1 && responseTypes.containsKey(0)) {
-                // no pre-defined successful status code, use retrofit default
-                T body = null;
-                Type type = responseTypes.get(0);
-                if (type != null && type == InputStream.class) {
-                    body = (T) responseContent.in();
-                }
-                else if (type != null && type != Void.class && responseContent.length() > 0) {
-                    body = (T) this.converter.fromBody(responseContent, type);
-                }
-                result = new ServiceResponse<T>(body, response);
-            } else {
-                // not in pre-defined successful status code list or
-                // standard HTTP error codes
-                ServiceException exception = new ServiceException(error);
-                exception.setResponse(response);
-                if (responseTypes.containsKey(0) && responseContent.length() > 0) {
-                    exception.setErrorModel(this.converter.fromBody(
-                            responseContent,
-                            Object.class));
-                }
+        int statusCode = response.code();
+        ResponseBody responseBody;
+        if (response.isSuccess()) {
+            responseBody = response.body();
+        } else {
+            responseBody = response.errorBody();
+        }
+
+        if (responseTypes.containsKey(statusCode)) {
+            return new ServiceResponse<>((T) buildBody(statusCode, responseBody), response);
+        } else if (response.isSuccess() && responseTypes.size() == 1) {
+            return new ServiceResponse<>((T) buildBody(statusCode, responseBody), response);
+        } else {
+            try {
+                E exception = (E) exceptionType.getConstructor(String.class).newInstance("Invalid status code " + statusCode);
+                exceptionType.getMethod("setResponse", response.getClass()).invoke(exception, response);
+                exceptionType.getMethod("setBody", (Class<?>) responseTypes.get(0)).invoke(exception, buildBody(statusCode, responseBody));
                 throw exception;
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new IOException("Invalid status code " + statusCode + ", but an instance of " + exceptionType.getCanonicalName()
+                    + " cannot be created.", e);
             }
-            return result;
-        } catch (ServiceException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            ServiceException exception = new ServiceException(ex);
-            exception.setResponse(response);
-            throw exception;
+        }
+    }
+
+    /**
+     * Build a ServiceResponse instance from a REST call response and a
+     * possible error, which does not have a response body.
+     *
+     * <p>
+     *     If the status code in the response is registered, the response will
+     *     be considered valid. If the status code is not registered, the
+     *     response will be considered invalid. An AutoRestException is also thrown.
+     * </p>
+     *
+     * @param response the {@link Response} instance from REST call
+     * @param retrofit the {@link Retrofit} instance from REST call
+     * @return a ServiceResponse instance of generic type {@link T}
+     * @throws E exceptions from the REST call
+     * @throws IOException exceptions from deserialization
+     */
+    @SuppressWarnings("unchecked")
+    public ServiceResponse<T> buildEmpty(Response<Void> response, Retrofit retrofit) throws E, IOException {
+        int statusCode = response.code();
+        if (responseTypes.containsKey(statusCode)) {
+            return new ServiceResponse<>(response);
+        } else if (response.isSuccess() && responseTypes.size() == 1) {
+            return new ServiceResponse<>(response);
+        } else {
+            try {
+                E exception = (E) exceptionType.getConstructor(String.class).newInstance("Invalid status code " + statusCode);
+                exceptionType.getMethod("setResponse", response.getClass()).invoke(exception, response);
+                throw exception;
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new IOException("Invalid status code " + statusCode + ", but an instance of " + exceptionType.getCanonicalName()
+                        + " cannot be created.", e);
+            }
+        }
+    }
+
+    /**
+     * Build a ServiceResponseWithHeaders instance from a REST call response, a header
+     * in JSON format, and a possible error.
+     *
+     * <p>
+     *     If the status code in the response is registered, the response will
+     *     be considered valid and deserialized into the specified destination
+     *     type. If the status code is not registered, the response will be
+     *     considered invalid and deserialized into the specified error type if
+     *     there is one. An AutoRestException is also thrown.
+     * </p>
+     *
+     * @param response the {@link Response} instance from REST call
+     * @param retrofit the {@link Retrofit} instance from REST call
+     * @param headerType the type of the header
+     * @param <THeader> the type of the header
+     * @return a ServiceResponseWithHeaders instance of generic type {@link T}
+     * @throws E exceptions from the REST call
+     * @throws IOException exceptions from deserialization
+     */
+    public <THeader> ServiceResponseWithHeaders<T, THeader> buildWithHeaders(Response<ResponseBody> response, Retrofit retrofit, Class<THeader> headerType) throws E, IOException {
+        ServiceResponse<T> bodyResponse = build(response, retrofit);
+        THeader headers = mapperAdapter.deserialize(
+                mapperAdapter.serialize(response.headers()),
+                headerType);
+        return new ServiceResponseWithHeaders<>(bodyResponse.getBody(), headers, bodyResponse.getResponse());
+    }
+
+    /**
+     * Build a ServiceResponseWithHeaders instance from a REST call response, a header
+     * in JSON format, and a possible error, which does not have a response body.
+     *
+     * <p>
+     *     If the status code in the response is registered, the response will
+     *     be considered valid. If the status code is not registered, the
+     *     response will be considered invalid. An AutoRestException is also thrown.
+     * </p>
+     *
+     * @param response the {@link Response} instance from REST call
+     * @param retrofit the {@link Retrofit} instance from REST call
+     * @param headerType the type of the header
+     * @param <THeader> the type of the header
+     * @return a ServiceResponseWithHeaders instance of generic type {@link T}
+     * @throws E exceptions from the REST call
+     * @throws IOException exceptions from deserialization
+     */
+    public <THeader> ServiceResponseWithHeaders<T, THeader> buildEmptyWithHeaders(Response<Void> response, Retrofit retrofit, Class<THeader> headerType) throws E, IOException {
+        ServiceResponse<T> bodyResponse = buildEmpty(response, retrofit);
+        THeader headers = mapperAdapter.deserialize(
+                mapperAdapter.serialize(response.headers()),
+                headerType);
+        return new ServiceResponseWithHeaders<>(headers, bodyResponse.getHeadResponse());
+    }
+
+    /**
+     * Builds the body object from the HTTP status code and returned response
+     * body undeserialized and wrapped in {@link ResponseBody}.
+     *
+     * @param statusCode the HTTP status code
+     * @param responseBody the response body
+     * @return the response body, deserialized
+     * @throws IOException thrown for any deserialization errors
+     */
+    protected Object buildBody(int statusCode, ResponseBody responseBody) throws IOException {
+        if (responseBody == null) {
+            return null;
+        }
+
+        Type type;
+        if (responseTypes.containsKey(statusCode)) {
+            type = responseTypes.get(statusCode);
+        } else if (responseTypes.get(0) != Object.class) {
+            type = responseTypes.get(0);
+        } else {
+            type = new TypeReference<T>() { }.getType();
+        }
+
+        // Void response
+        if (type == Void.class) {
+            return null;
+        }
+        // Return raw response if InputStream is the target type
+        else if (type == InputStream.class) {
+            return responseBody.byteStream();
+        }
+        // Deserialize
+        else {
+            String responseContent = responseBody.string();
+            if (responseContent.length() <= 0) {
+                return null;
+            }
+            return mapperAdapter.deserialize(responseContent, type);
         }
     }
 }

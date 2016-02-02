@@ -4,17 +4,19 @@
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.NodeJS.Properties;
 using Microsoft.Rest.Generator.NodeJS.Templates;
+using Microsoft.Rest.Generator;
 using Microsoft.Rest.Generator.Utilities;
+using System;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.IO;
-using System.Globalization;
 
 namespace Microsoft.Rest.Generator.NodeJS
 {
     public class NodeJSCodeGenerator : CodeGenerator
     {
-        private const string ClientRuntimePackage = "ms-rest version 1.1.0";
+        private const string ClientRuntimePackage = "ms-rest version 1.8.0";
 
         public NodeJsCodeNamer Namer { get; private set; }
 
@@ -22,6 +24,9 @@ namespace Microsoft.Rest.Generator.NodeJS
         {
             Namer = new NodeJsCodeNamer();
         }
+
+        [SettingsInfo("Disables TypeScript generation.")]
+        public bool DisableTypeScriptGeneration {get; set;}            // Change to true if you want to no longer generate the 3 d.ts files, for some reason
 
         public override string Name
         {
@@ -54,9 +59,31 @@ namespace Microsoft.Rest.Generator.NodeJS
         /// <param name="serviceClient"></param>
         public override void NormalizeClientModel(ServiceClient serviceClient)
         {
+            Extensions.NormalizeClientModel(serviceClient, Settings);
+            PopulateAdditionalProperties(serviceClient);
             Namer.NormalizeClientModel(serviceClient);
             Namer.ResolveNameCollisions(serviceClient, Settings.Namespace,
                 Settings.Namespace + ".Models");
+            Namer.NormalizeOdataFilterParameter(serviceClient);
+        }
+
+        private void PopulateAdditionalProperties(ServiceClient serviceClient)
+        {
+            if (Settings.AddCredentials)
+            {
+                if (!serviceClient.Properties.Any(p => p.Type == PrimaryType.Credentials))
+                {
+                    serviceClient.Properties.Add(new Property
+                    {
+                        Name = "credentials",
+                        SerializedName = "credentials",
+                        Type = PrimaryType.Credentials,
+                        IsRequired = true,
+                        Documentation = "Subscription credentials which uniquely identify client subscription."
+                    });
+                }
+                
+            }
         }
 
         /// <summary>
@@ -74,6 +101,15 @@ namespace Microsoft.Rest.Generator.NodeJS
             };
             await Write(serviceClientTemplate, serviceClient.Name.ToCamelCase() + ".js");
 
+            if (!DisableTypeScriptGeneration)
+            {
+                var serviceClientTemplateTS = new ServiceClientTemplateTS
+                {
+                    Model = serviceClientTemplateModel,
+                };
+                await Write(serviceClientTemplateTS, serviceClient.Name.ToCamelCase() + ".d.ts");
+            }
+
             //Models
             if (serviceClient.ModelTypes.Any())
             {
@@ -82,6 +118,15 @@ namespace Microsoft.Rest.Generator.NodeJS
                     Model = serviceClientTemplateModel
                 };
                 await Write(modelIndexTemplate, Path.Combine("models", "index.js"));
+                if (!DisableTypeScriptGeneration)
+                {
+                    var modelIndexTemplateTS = new ModelIndexTemplateTS
+                    {
+                        Model = serviceClientTemplateModel
+                    };
+                    await Write(modelIndexTemplateTS, Path.Combine("models", "index.d.ts"));
+                }
+
                 foreach (var modelType in serviceClientTemplateModel.ModelTemplateModels)
                 {
                     var modelTemplate = new ModelTemplate
@@ -100,6 +145,16 @@ namespace Microsoft.Rest.Generator.NodeJS
                     Model = serviceClientTemplateModel
                 };
                 await Write(methodGroupIndexTemplate, Path.Combine("operations", "index.js"));
+
+                if (!DisableTypeScriptGeneration)
+                {
+                    var methodGroupIndexTemplateTS = new MethodGroupIndexTemplateTS
+                    {
+                        Model = serviceClientTemplateModel
+                    };
+                    await Write(methodGroupIndexTemplateTS, Path.Combine("operations", "index.d.ts"));
+                }
+
                 foreach (var methodGroupModel in serviceClientTemplateModel.MethodGroupModels)
                 {
                     var methodGroupTemplate = new MethodGroupTemplate

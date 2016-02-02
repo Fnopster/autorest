@@ -4,16 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Rest.Generator.Azure;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Utilities;
-using Microsoft.Rest.Generator.Azure;
 
 namespace Microsoft.Rest.Generator.CSharp.Azure
 {
     public class AzureServiceClientTemplateModel : ServiceClientTemplateModel
     {
-        public AzureServiceClientTemplateModel(ServiceClient serviceClient)
-            : base(serviceClient)
+        public AzureServiceClientTemplateModel(ServiceClient serviceClient, bool internalConstructors)
+            : base(serviceClient, internalConstructors)
         {
             // TODO: Initialized in the base constructor. Why Clear it?
             MethodTemplateModels.Clear();
@@ -39,18 +39,14 @@ namespace Microsoft.Rest.Generator.CSharp.Azure
         {
             get
             {
-                if (Methods.Any(m =>
-                    m.Parameters.Any(p =>
-                        p.SerializedName.Equals("$filter", StringComparison.OrdinalIgnoreCase) &&
-                        p.Type is CompositeType &&
-                        p.Location == ParameterLocation.Query)))
+                if (MethodTemplateModels.Any(m =>
+                    m.ParameterTemplateModels.Any(p => ((AzureParameterTemplateModel)p).IsODataFilterExpression)))
                 {
-                    yield return "System.Linq.Expressions";
                     yield return "Microsoft.Rest.Azure.OData";
                 }
                 yield return "Microsoft.Rest.Azure";
 
-                if (this.ModelTypes.Any( m => !m.Extensions.ContainsKey(AzureCodeGenerator.ExternalExtension)))
+                if (this.ModelTypes.Any( m => !m.Extensions.ContainsKey(AzureExtensions.ExternalExtension)))
                 {
                     yield return "Models";
                 }

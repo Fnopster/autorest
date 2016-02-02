@@ -24,10 +24,7 @@
             "description": "Successfully received the '9C4D50EE-2D56-4CD3-8152-34347DC9F2B0' x-ms-client-request header"
           },
           "default": {
-            "description": "Unexpected error",
-            "schema": {
-              "$ref": "#/definitions/Error"
-            }
+            "description": "Unexpected error"
           }
         }
       }
@@ -732,6 +729,88 @@
           }
         }
       }
+    },
+    "/azurespecials/odata/filter": {
+      "get": {
+        "operationId": "odata_getWithFilter",
+        "description": "Specify filter parameter with value '$filter=id gt 5 and name eq 'foo'&$orderby=id&$top=10'",
+        "tags": [
+          "odata Operations"
+        ],
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "The filter parameter with value '$filter=id gt 5 and name eq 'foo''."
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "description": "The top parameter with value 10."
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "The orderby parameter with value id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received filter parameter with value '$filter=id gt 5 and name eq 'foo'&$orderby=id&$top=10'"
+          },
+          "default": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        },
+        "x-ms-odata": "#/definitions/OdataFilter"
+      }
+    },   
+    "/azurespecials/customNamedRequestId": {
+      "post": {
+        "operationId": "header_customNamedRequestId",
+        "description": "Send foo-client-request-id = 9C4D50EE-2D56-4CD3-8152-34347DC9F2B0 in the header of the request",
+        "parameters": [
+          {
+            "name": "foo-client-request-id",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "The fooRequestId",
+            "x-ms-client-request-id": true
+          }
+        ],
+        "tags": [
+          "Header Operations"
+        ],
+        "x-ms-request-id": "foo-request-id",
+        "responses": {
+          "200": {
+            "headers": {
+              "foo-request-id": {
+                "description": "Gets the foo-request-id.",
+                "type": "string"
+              }
+            },
+            "description": "Gets the foo-request-id"
+          },
+          "default": {
+            "description": "Unexpected error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
     }
   },
   "parameters": {
@@ -758,6 +837,17 @@
           "format": "int32"
         },
         "message": {
+          "type": "string"
+        }
+      }
+    },
+    "OdataFilter": {
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
           "type": "string"
         }
       }

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -24,13 +23,19 @@ namespace Microsoft.Rest.Generator.ClientModel
             Extensions = new Dictionary<string, object>();
             Parameters = new List<Parameter>();
             RequestHeaders = new Dictionary<string, string>();
-            Responses = new Dictionary<HttpStatusCode, IType>();
+            Responses = new Dictionary<HttpStatusCode, Response>();
+            InputParameterTransformation = new List<ParameterTransformation>();
         }
 
         /// <summary>
         /// Gets or sets the method name.
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name defined in the spec (OperationId).
+        /// </summary>
+        public string SerializedName { get; set; }
 
         /// <summary>
         /// Gets or sets the group name.
@@ -40,7 +45,7 @@ namespace Microsoft.Rest.Generator.ClientModel
         /// <summary>
         /// Gets or sets the HTTP url.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings", 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings",
             Justification= "Url might be used as a template, thus making it invalid url in certain scenarios.")]
         public string Url { get; set; }
 
@@ -60,6 +65,34 @@ namespace Microsoft.Rest.Generator.ClientModel
         public List<Parameter> Parameters { get; private set; }
 
         /// <summary>
+        /// Gets or sets the logical parameter.
+        /// </summary>
+        public IEnumerable<Parameter> LogicalParameters
+        {
+            get
+            {
+                return Parameters.Where(gp => gp.Location != ParameterLocation.None)
+                    .Union(InputParameterTransformation.Select(m => m.OutputParameter));
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the body parameter.
+        /// </summary>
+        public Parameter Body
+        {
+            get
+            {
+                return LogicalParameters.FirstOrDefault(p => p.Location == ParameterLocation.Body);
+            }
+        }
+
+        /// <summary>
+        /// Gets the list of input Parameter transformations
+        /// </summary>
+        public IList<ParameterTransformation> InputParameterTransformation { get; private set; }
+
+        /// <summary>
         /// Gets or sets request headers.
         /// </summary>
         public Dictionary<string, string> RequestHeaders { get; private set; }
@@ -76,23 +109,35 @@ namespace Microsoft.Rest.Generator.ClientModel
 
         /// <summary>
         /// Gets or sets response bodies by HttpStatusCode.
+        /// and headers.
         /// </summary>
-        public Dictionary<HttpStatusCode, IType> Responses { get; private set; }
+        public Dictionary<HttpStatusCode, Response> Responses { get; private set; }
 
         /// <summary>
         /// Gets or sets the default response.
         /// </summary>
-        public IType DefaultResponse { get; set; }
+        public Response DefaultResponse { get; set; }
 
         /// <summary>
-        /// Gets or sets the method return type.
+        /// Gets or sets the method return type. The tuple contains a body
+        /// and headers.
         /// </summary>
-        public IType ReturnType { get; set; }
+        public Response ReturnType { get; set; }
 
         /// <summary>
-        /// Gets or sets the documentation.
+        /// Gets or sets the description.
         /// </summary>
-        public string Documentation { get; set; }
+        public string Description { get; set; }
+
+        /// <summary>
+        /// Gets or sets the summary.
+        /// </summary>
+        public string Summary { get; set; }
+
+        /// <summary>
+        /// Gets or sets the content type.
+        /// </summary>
+        public string RequestContentType { get; set; }
 
         /// <summary>
         /// Gets vendor extensions dictionary.
@@ -121,9 +166,11 @@ namespace Microsoft.Rest.Generator.ClientModel
             newMethod.Extensions = new Dictionary<string, object>();
             newMethod.Parameters = new List<Parameter>();
             newMethod.RequestHeaders = new Dictionary<string, string>();
-            newMethod.Responses = new Dictionary<HttpStatusCode, IType>();
+            newMethod.Responses = new Dictionary<HttpStatusCode, Response>();
+            newMethod.InputParameterTransformation = new List<ParameterTransformation>();
             this.Extensions.ForEach(e => newMethod.Extensions[e.Key] = e.Value);
             this.Parameters.ForEach(p => newMethod.Parameters.Add((Parameter)p.Clone()));
+            this.InputParameterTransformation.ForEach(m => newMethod.InputParameterTransformation.Add((ParameterTransformation)m.Clone()));
             this.RequestHeaders.ForEach(r => newMethod.RequestHeaders[r.Key] = r.Value);
             this.Responses.ForEach(r => newMethod.Responses[r.Key] = r.Value);
             return newMethod;

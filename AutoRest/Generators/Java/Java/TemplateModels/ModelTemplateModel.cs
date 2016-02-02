@@ -7,7 +7,6 @@ using System.Linq;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Java.TemplateModels;
 using Microsoft.Rest.Generator.Utilities;
-using System.Globalization;
 
 namespace Microsoft.Rest.Generator.Java
 {
@@ -26,19 +25,6 @@ namespace Microsoft.Rest.Generator.Java
         }
 
         public ServiceClient ServiceClient { get; set; }
-
-        public IEnumerable<Property> ComposedProperties
-        {
-            get
-            {
-                if(this._parent != null)
-                {
-                    return _parent.ComposedProperties
-                                  .Union(this.Properties);
-                }
-                return this.Properties;
-            }
-        }
 
         public bool IsPolymorphic
         {
@@ -111,7 +97,7 @@ namespace Microsoft.Rest.Generator.Java
 
         private bool isSpecial(IType type)
         {
-            if (type == PrimaryType.DateTime || type == PrimaryType.Date || type == PrimaryType.ByteArray || type is CompositeType)
+            if (type == PrimaryType.DateTime || type == PrimaryType.Date || type == PrimaryType.DateTimeRfc1123 || type == PrimaryType.ByteArray || type is CompositeType)
             {
                 return true;
             }
@@ -126,7 +112,7 @@ namespace Microsoft.Rest.Generator.Java
             return false;
         }
 
-        public IEnumerable<String> Imports {
+        public virtual IEnumerable<String> ImportList {
             get
             {
                 HashSet<String> classes = new HashSet<string>();
@@ -140,9 +126,9 @@ namespace Microsoft.Rest.Generator.Java
                     {
                         classes.Add("java.util.Map");
                     }
-                    else if (property.Type is PrimaryType && property.Type != PrimaryType.ByteArray)
+                    else if (property.Type is PrimaryType)
                     {
-                        var importedFrom = JavaCodeNamer.ImportedFrom(property.Type as PrimaryType);
+                        var importedFrom = JavaCodeNamer.GetJavaType(property.Type as PrimaryType);
                         if (importedFrom != null)
                         {
                             classes.Add(importedFrom);
@@ -165,6 +151,22 @@ namespace Microsoft.Rest.Generator.Java
                     }
                 }
                 return classes.AsEnumerable();
+            }
+        }
+
+        public virtual string ExceptionTypeDefinitionName
+        {
+            get
+            {
+                if (this.Extensions.ContainsKey(Microsoft.Rest.Generator.Extensions.NameOverrideExtension))
+                {
+                    var ext = this.Extensions[Microsoft.Rest.Generator.Extensions.NameOverrideExtension] as Newtonsoft.Json.Linq.JContainer;
+                    if (ext != null && ext["name"] != null)
+                    {
+                        return ext["name"].ToString();
+                    }
+                }
+                return this.Name + "Exception";
             }
         }
     }

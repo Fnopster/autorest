@@ -21,8 +21,9 @@ namespace Microsoft.Rest.Modeler.Swagger.Tests
                 {
                     Input = specFile,
                     OutputDirectory = "X:\\Output",
-                    Header = "MICROSOFT_MIT",
-                    Modeler = modeler
+                    Header = "MICROSOFT_MIT_NO_VERSION",
+                    Modeler = modeler,
+                    PayloadFlatteningThreshold = 1
                 };
 
             }

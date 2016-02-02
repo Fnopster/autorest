@@ -1,16 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using Microsoft.CSharp;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Java.TemplateModels;
 using Microsoft.Rest.Generator.Utilities;
 using System.Globalization;
 using System.Text;
+using System;
 
 namespace Microsoft.Rest.Generator.Java
 {
@@ -18,19 +16,24 @@ namespace Microsoft.Rest.Generator.Java
     {
         private readonly IScopeProvider _scopeProvider = new ScopeProvider();
 
+        private string clientReference;
+
         public MethodTemplateModel(Method source, ServiceClient serviceClient)
         {
             this.LoadFrom(source);
             ParameterTemplateModels = new List<ParameterTemplateModel>();
-            source.Parameters.ForEach(p => ParameterTemplateModels.Add(new ParameterTemplateModel(p)));
+            source.Parameters.Where(p => p.Location == ParameterLocation.Path).ForEach(p => ParameterTemplateModels.Add(new ParameterTemplateModel(p)));
+            source.Parameters.Where(p => p.Location != ParameterLocation.Path).ForEach(p => ParameterTemplateModels.Add(new ParameterTemplateModel(p)));
             ServiceClient = serviceClient;
             if (source.Group != null)
             {
                 OperationName = source.Group.ToPascalCase();
+                clientReference = "this.client";
             }
             else
             {
                 OperationName = serviceClient.Name;
+                clientReference = "this";
             }
         }
 
@@ -39,21 +42,30 @@ namespace Microsoft.Rest.Generator.Java
         public ServiceClient ServiceClient { get; set; }
 
         public List<ParameterTemplateModel> ParameterTemplateModels { get; private set; }
-
+        
         public IScopeProvider Scope
         {
             get { return _scopeProvider; }
         }
 
+        public IEnumerable<Parameter> OrderedLogicalParameters
+        {
+            get
+            {
+                return LogicalParameters.Where(p => p.Location == ParameterLocation.Path)
+                    .Union(LogicalParameters.Where(p => p.Location != ParameterLocation.Path));
+            }
+        }
+
         /// <summary>
         /// Generate the method parameter declarations for a method
         /// </summary>
-        public string MethodParameterApiDeclaration
+        public virtual string MethodParameterApiDeclaration
         {
             get
             {
                 List<string> declarations = new List<string>();
-                foreach (var parameter in ParameterTemplateModels)
+                foreach (var parameter in OrderedLogicalParameters)
                 {
                     StringBuilder declarationBuilder = new StringBuilder();
                     if (Url.Contains("{" + parameter.Name + "}"))
@@ -83,7 +95,12 @@ namespace Microsoft.Rest.Generator.Java
                     }
                     else
                     {
-                        declarationBuilder.Append(parameter.Type.ToString());
+                        string typeString = parameter.Type.Name;
+                        if (!parameter.IsRequired)
+                        {
+                            typeString = JavaCodeNamer.WrapPrimitiveType(parameter.Type).Name;
+                        }
+                        declarationBuilder.Append(typeString);
                     }
                     declarationBuilder.Append(" " + declarativeName);
                     declarations.Add(declarationBuilder.ToString());
@@ -114,12 +131,12 @@ namespace Microsoft.Rest.Generator.Java
             get
             {
                 List<string> declarations = new List<string>();
-                foreach (var parameter in ParameterTemplateModels)
+                foreach (var parameter in OrderedLogicalParameters)
                 {
                     if ((parameter.Location != ParameterLocation.Body)
                          && parameter.Type.NeedsSpecialSerialization())
                     {
-                        declarations.Add(parameter.ToString(parameter.Name));
+                        declarations.Add(parameter.ToString(parameter.Name, clientReference));
                     }
                     else
                     {
@@ -142,6 +159,43 @@ namespace Microsoft.Rest.Generator.Java
                     parameters += ", ";
                 }
                 parameters += string.Format(CultureInfo.InvariantCulture, "new ServiceResponseCallback()");
+                return parameters;
+            }
+        }
+
+        public string LocalMethodParameterInvocation
+        {
+            get
+            {
+                List<string> declarations = new List<string>();
+                foreach (var parameter in LocalParameters)
+                {
+                    if ((parameter.Location != ParameterLocation.Body)
+                         && parameter.Type.NeedsSpecialSerialization())
+                    {
+                        declarations.Add(parameter.ToString(parameter.Name, clientReference));
+                    }
+                    else
+                    {
+                        declarations.Add(parameter.Name);
+                    }
+                }
+
+                var declaration = string.Join(", ", declarations);
+                return declaration;
+            }
+        }
+
+        public string LocalMethodParameterInvocationWithCallback
+        {
+            get
+            {
+                var parameters = LocalMethodParameterInvocation;
+                if (!parameters.IsNullOrEmpty())
+                {
+                    parameters += ", ";
+                }
+                parameters += string.Format(CultureInfo.InvariantCulture, "new ServiceCallback<" + GenericReturnTypeString + ">()");
                 return parameters;
             }
         }
@@ -221,7 +275,7 @@ namespace Microsoft.Rest.Generator.Java
                     parameters += ", ";
                 }
                 parameters += string.Format(CultureInfo.InvariantCulture, "final ServiceCallback<{0}> serviceCallback",
-                    ReturnType != null ? JavaCodeNamer.WrapPrimitiveType(ReturnType).ToString() : "Void");
+                    ReturnType.Body != null ? JavaCodeNamer.WrapPrimitiveType(ReturnType.Body).ToString() : "Void");
                 return parameters;
             }
         }
@@ -234,9 +288,73 @@ namespace Microsoft.Rest.Generator.Java
         {
             get
             {
+                //Omit parameter-group properties for now since Java doesn't support them yet
                 return ParameterTemplateModels.Where(
                     p => p != null && p.ClientProperty == null && !string.IsNullOrWhiteSpace(p.Name))
                     .OrderBy(item => !item.IsRequired);
+            }
+        }
+
+        /// <summary>
+        /// Get the type for operation exception
+        /// </summary>
+        public virtual string OperationExceptionTypeString
+        {
+            get
+            {
+                if (this.DefaultResponse.Body is CompositeType)
+                {
+                    CompositeType type = this.DefaultResponse.Body as CompositeType;
+                    if (type.Extensions.ContainsKey(Microsoft.Rest.Generator.Extensions.NameOverrideExtension))
+                    {
+                        var ext = type.Extensions[Microsoft.Rest.Generator.Extensions.NameOverrideExtension] as Newtonsoft.Json.Linq.JContainer;
+                        if (ext != null && ext["name"] != null)
+                        {
+                            return ext["name"].ToString();
+                        }
+                    }
+                    return type.Name + "Exception";
+                }
+                else
+                {
+                    return "ServiceException";
+                }
+            }
+        }
+
+        public virtual IEnumerable<string> Exceptions
+        {
+            get
+            {
+                yield return OperationExceptionTypeString;
+                yield return "IOException";
+                if (RequiredNullableParameters.Any())
+                {
+                    yield return "IllegalArgumentException";
+                }
+            }
+        }
+
+        public virtual string ExceptionString
+        {
+            get
+            {
+                return string.Join(", ", Exceptions);
+            }
+        }
+
+        public virtual List<string> ExceptionStatements
+        {
+            get
+            {
+                List<string> exceptions = new List<string>();
+                exceptions.Add(OperationExceptionTypeString + " exception thrown from REST call");
+                exceptions.Add("IOException exception thrown from serialization/deserialization");
+                if (RequiredNullableParameters.Any())
+                {
+                    exceptions.Add("IllegalArgumentException exception thrown from invalid parameters");
+                }
+                return exceptions;
             }
         }
 
@@ -247,9 +365,9 @@ namespace Microsoft.Rest.Generator.Java
         {
             get
             {
-                if (ReturnType != null)
+                if (ReturnType.Body != null)
                 {
-                    return JavaCodeNamer.WrapPrimitiveType(ReturnType).Name;
+                    return JavaCodeNamer.WrapPrimitiveType(ReturnType.Body).Name;
                 }
                 return "void";
             }
@@ -259,24 +377,188 @@ namespace Microsoft.Rest.Generator.Java
         {
             get
             {
-                if (ReturnType != null)
+                if (ReturnType.Body != null)
                 {
-                    return JavaCodeNamer.WrapPrimitiveType(ReturnType).Name;
+                    return JavaCodeNamer.WrapPrimitiveType(ReturnType.Body).Name;
                 }
                 return "Void";
             }
         }
 
-        public string ReturnStatement {
+        public string OperationResponseType
+        {
             get
             {
-                StringBuilder sb = new StringBuilder();
-                if (this.ReturnType != null)
+                if (ReturnType.Headers == null)
                 {
-                    sb.Append("return ");
+                    return "ServiceResponse";
                 }
-                sb.Append("response.getBody();");
-                return sb.ToString();
+                else
+                {
+                    return "ServiceResponseWithHeaders";
+                }
+            }
+        }
+
+        public string OperationResponseReturnTypeString
+        {
+            get
+            {
+                if (ReturnType.Headers == null)
+                {
+                    return string.Format(CultureInfo.InvariantCulture, "{0}<{1}>", OperationResponseType, GenericReturnTypeString);
+                }
+                else
+                {
+                    return string.Format(CultureInfo.InvariantCulture, "{0}<{1}, {2}>", OperationResponseType, GenericReturnTypeString, ReturnType.Headers.Name);
+                }
+            }
+        }
+
+        public string CallType
+        {
+            get
+            {
+                if (this.HttpMethod == HttpMethod.Head)
+                {
+                    return "Void";
+                }
+                else
+                {
+                    return "ResponseBody";
+                }
+            }
+        }
+
+        public string InternalCallback
+        {
+            get
+            {
+                if (this.HttpMethod == HttpMethod.Head)
+                {
+                    return "ServiceResponseEmptyCallback";
+                }
+                else
+                {
+                    return "ServiceResponseCallback";
+                }
+            }
+        }
+
+        public virtual string ResponseBuilder
+        {
+            get
+            {
+                return "ServiceResponseBuilder";
+            }
+        }
+
+        public virtual string RuntimeBasePackage
+        {
+            get
+            {
+                return "com.microsoft.rest";
+            }
+        }
+
+        public virtual List<string> InterfaceImports
+        {
+            get
+            {
+                HashSet<string> imports = new HashSet<string>();
+                // static imports
+                imports.Add("retrofit.Call");
+                imports.Add("retrofit.http.Headers");
+                if (this.HttpMethod != HttpMethod.Head)
+                {
+                    imports.Add("com.squareup.okhttp.ResponseBody");
+                }
+                imports.Add("com.microsoft.rest." + OperationResponseType);
+                imports.Add("com.microsoft.rest.ServiceCallback");
+                // parameter types
+                this.Parameters.Concat(this.LogicalParameters)
+                    .ForEach(p => imports.AddRange(p.Type.ImportFrom(ServiceClient.Namespace)));
+                // parameter locations
+                this.LogicalParameters.ForEach(p =>
+                {
+                    string locationImport = p.Location.ImportFrom();
+                    if (!string.IsNullOrEmpty(locationImport))
+                    {
+                        imports.Add(p.Location.ImportFrom());
+                    }
+                });
+                // return type
+                imports.AddRange(this.ReturnType.Body.ImportFrom(ServiceClient.Namespace));
+                // Header type
+                imports.AddRange(this.ReturnType.Headers.ImportFrom(ServiceClient.Namespace));
+                // Http verb annotations
+                imports.Add(this.HttpMethod.ImportFrom());
+                // exceptions
+                this.ExceptionString.Split(new string[] { ", " }, StringSplitOptions.RemoveEmptyEntries)
+                    .ForEach(ex => {
+                        string exceptionImport = JavaCodeNamer.GetJavaException(ex, ServiceClient);
+                        if (exceptionImport != null) imports.Add(JavaCodeNamer.GetJavaException(ex, ServiceClient));
+                    });
+                return imports.ToList();
+            }
+        }
+
+        public virtual List<string> ImplImports
+        {
+            get
+            {
+                HashSet<string> imports = new HashSet<string>();
+                // static imports
+                imports.Add("retrofit.Call");
+                imports.Add("retrofit.Response");
+                imports.Add("retrofit.Retrofit");
+                if (this.HttpMethod != HttpMethod.Head)
+                {
+                    imports.Add("com.squareup.okhttp.ResponseBody");
+                }
+                imports.Add("com.microsoft.rest." + OperationResponseType);
+                imports.Add(RuntimeBasePackage + "." + ResponseBuilder);
+                imports.Add("com.microsoft.rest.ServiceCallback");
+
+                // response type conversion
+                if (this.Responses.Any())
+                {
+                    imports.Add("com.google.common.reflect.TypeToken");
+                }
+                // validation
+                if (!ParametersToValidate.IsNullOrEmpty())
+                {
+                    imports.Add("com.microsoft.rest.Validator");
+                }
+                // internal callback
+                if (this.CallType == "Void")
+                {
+                    imports.Add("com.microsoft.rest.ServiceResponseEmptyCallback");
+                }
+                else
+                {
+                    imports.Add("com.microsoft.rest.ServiceResponseCallback");
+                }
+                // parameter types
+                this.LocalParameters.Concat(this.LogicalParameters)
+                    .ForEach(p => imports.AddRange(p.Type.ImportFrom(ServiceClient.Namespace)));
+                // parameter utils
+                this.LocalParameters.Concat(this.LogicalParameters)
+                    .ForEach(p => imports.AddRange(p.ImportFrom()));
+                // return type
+                imports.AddRange(this.ReturnType.Body.ImportFrom(ServiceClient.Namespace));
+                // response type (can be different from return type)
+                this.Responses.ForEach(r => imports.AddRange(r.Value.Body.ImportFrom(ServiceClient.Namespace)));
+                // Header type
+                imports.AddRange(this.ReturnType.Headers.ImportFrom(ServiceClient.Namespace));
+                // exceptions
+                this.ExceptionString.Split(new string[] { ", " }, StringSplitOptions.RemoveEmptyEntries)
+                    .ForEach(ex =>
+                    {
+                        string exceptionImport = JavaCodeNamer.GetJavaException(ex, ServiceClient);
+                        if (exceptionImport != null) imports.Add(JavaCodeNamer.GetJavaException(ex, ServiceClient));
+                    });
+                return imports.ToList();
             }
         }
     }

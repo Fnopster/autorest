@@ -1,6 +1,7 @@
 ﻿@using System.Linq
 @using System.Collections.Generic
 @using Microsoft.Rest.Generator.ClientModel
+@using Microsoft.Rest.Generator.NodeJS
 @using Microsoft.Rest.Generator.NodeJS.TemplateModels
 @inherits Microsoft.Rest.Generator.Template<Microsoft.Rest.Generator.NodeJS.ModelTemplateModel>
 /*
@@ -9,72 +10,58 @@
 @EmptyLine
 'use strict';
 @EmptyLine
-@if (Model.ContainsPropertiesInCompositeType())
+@if (Model.ContainsPropertiesInCompositeType() || Model.BaseModelType != null)
 {
 @:var models = require('./index');
 @EmptyLine
 }
-@if (Model.ContainsPropertiesInSequenceType())
+@if (Model.ContainsPropertiesInSequenceType() || Model.BaseModelType != null)
 {
 @:var util = require('util');
 @EmptyLine
 }
-
+@if (Model.ContainsDurationProperty())
+{
+@:var moment = require('moment');
+@EmptyLine
+}
 /**
  * @@class
  * Initializes a new instance of the @(Model.Name) class.
  * @@constructor
+@WrapComment(" * ", Model.Documentation)
+@foreach (var property in Model.DocumentationPropertyList)
+{
+    @ModelTemplateModel.ConstructPropertyDocumentation(
+              WrapComment(" * ", "@member {" + ModelTemplateModel.GetPropertyDocumentationType(property)
+                                             + "} " + ModelTemplateModel.GetPropertyDocumentationName(property)
+                                             + " " + ModelTemplateModel.GetPropertyDocumentationString(property)))
+}
  */
-function @(Model.Name)() { }
-@EmptyLine
-/**
- * Validate the payload against the @Model.Name schema
- *
- * @@param {JSON} payload
- *
- */
-@(Model.Name).prototype.validate = function (payload) {
-  if (!payload) {
-    throw new Error('@(Model.Name) cannot be null.');
-  }
-  @{
-  var propertyList = new List<Property>(Model.ComposedProperties);
-  for (int i = 0; i < propertyList.Count; i++)
+function @(Model.Name)() {
+@{
+  if (Model.BaseModelType != null)
   {
-  @:@(Model.ValidateProperty("payload", propertyList[i]))
-  if (i != propertyList.Count-1)
-  {
-  @EmptyLine
-  }
+  @:@(Model.Name)['super_'].call(this);
   }
 }
-};
+}
 @EmptyLine
+@{
+if (Model.BaseModelType != null)
+{
+@:util.inherits(@(Model.Name), models['@(Model.BaseModelType.Name)']);
+@EmptyLine
+}
+}
 /**
- * Deserialize the instance to @Model.Name schema
+ * Defines the metadata of @Model.Name
  *
- * @@param {JSON} instance
+ * @@returns {object} metadata of @Model.Name
  *
  */
-@(Model.Name).prototype.deserialize = function (instance) {
-  @{
-  var specialProperties = Model.SpecialProperties;
-  if (specialProperties.Count() > 0)
-  {
-  @:if (instance) {
-    var specialPropertyList = new List<Property>(Model.SpecialProperties);
-    for (int i = 0; i < specialPropertyList.Count; i++)
-    {
-    @:@(Model.DeserializeProperty("instance", specialPropertyList[i]))
-    if (i != specialPropertyList.Count - 1)
-    {
-    @EmptyLine
-    }
-    }
-  @:}
-  }
-  @:return instance;
-  }
+@(Model.Name).prototype.mapper = function () {
+  @(Model.ConstructModelMapper())
 };
 @EmptyLine
-module.exports = new @(Model.Name)();
+module.exports = @(Model.Name);

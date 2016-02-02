@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Utilities;
 using Microsoft.Rest.Modeler.Swagger.Model;
-using System.Globalization;
 
 namespace Microsoft.Rest.Modeler.Swagger
 {
@@ -15,6 +16,8 @@ namespace Microsoft.Rest.Modeler.Swagger
     /// </summary>
     public class SchemaBuilder : ObjectBuilder
     {
+        private const string DiscriminatorValueExtension = "x-ms-discriminator-value";
+
         private Schema _schema;
 
         public SchemaBuilder(Schema schema, SwaggerModeler modeler)
@@ -38,6 +41,14 @@ namespace Microsoft.Rest.Modeler.Swagger
                 _schema.AdditionalProperties != null)
             {
                 return _schema.GetBuilder(Modeler).ParentBuildServiceType(serviceTypeName);
+            }
+
+            // If object with file format treat as stream
+            if (_schema.Type != null 
+                && _schema.Type == DataType.Object 
+                && "file".Equals(SwaggerObject.Format, StringComparison.OrdinalIgnoreCase))
+            {
+                return PrimaryType.Stream;
             }
 
             // If the object does not have any properties, treat it as raw json (i.e. object)
@@ -81,7 +92,9 @@ namespace Microsoft.Rest.Modeler.Swagger
                             Name = name,
                             SerializedName = name,
                             Type = propertyType,
-                            IsRequired = property.Value.IsRequired
+                            IsRequired = property.Value.IsRequired,
+                            IsReadOnly = property.Value.ReadOnly,
+                            DefaultValue = property.Value.Default
                         };
                         SetConstraints(propertyObj.Constraints, property.Value);
 
@@ -103,7 +116,6 @@ namespace Microsoft.Rest.Modeler.Swagger
                                                            string.Format(CultureInfo.InvariantCulture, 
                                                            "'{0}'", v.Name))) + ".";
                         }
-                        propertyObj.IsReadOnly = property.Value.ReadOnly;
                         objectType.Properties.Add(propertyObj);
                     }
                     else
@@ -116,9 +128,21 @@ namespace Microsoft.Rest.Modeler.Swagger
             // Copy over extensions
             _schema.Extensions.ForEach(e => objectType.Extensions[e.Key] = e.Value);
 
-            // Put this in the extended type serializationProperty for building method return type in the end
             if (_schema.Extends != null)
             {
+                // Optionally override the discriminator value for polymorphic types. We expect this concept to be
+                // added to Swagger at some point, but until it is, we use an extension.
+                object discriminatorValueExtension;
+                if (objectType.Extensions.TryGetValue(DiscriminatorValueExtension, out discriminatorValueExtension))
+                {
+                    string discriminatorValue = discriminatorValueExtension as string;
+                    if (discriminatorValue != null)
+                    {
+                        objectType.SerializedName = discriminatorValue;
+                    }
+                }
+
+                // Put this in the extended type serializationProperty for building method return type in the end
                 Modeler.ExtendedTypes[serviceTypeName] = _schema.Extends.StripDefinitionPath();
             }
 

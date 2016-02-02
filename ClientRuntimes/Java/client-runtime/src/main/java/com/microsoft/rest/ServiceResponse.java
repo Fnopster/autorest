@@ -7,23 +7,48 @@
 
 package com.microsoft.rest;
 
-import retrofit.client.Response;
+import com.squareup.okhttp.ResponseBody;
+import retrofit.Response;
 
 /**
  * An instance of this class holds a response object and a raw REST response.
+ *
+ * @param <T> the type of the response
  */
 public class ServiceResponse<T> {
+    /**
+     * The response body object.
+     */
     private T body;
-    private Response response;
 
     /**
-     * Instantiate a ServiceResponse instance with a response object and a raw REST response
+     * The retrofit response wrapper containing information about the REST response.
+     */
+    private Response<ResponseBody> response;
+
+    /**
+     * The retrofit response wrapper if it's returned from a HEAD operation.
+     */
+    private Response<Void> headResponse;
+
+    /**
+     * Instantiate a ServiceResponse instance with a response object and a raw REST response.
+     *
      * @param body deserialized response object
      * @param response raw REST response
      */
-    public ServiceResponse(T body, Response response) {
+    public ServiceResponse(T body, Response<ResponseBody> response) {
         this.body = body;
         this.response = response;
+    }
+
+    /**
+     * Instantiate a ServiceResponse instance with a response from a HEAD operation.
+     *
+     * @param headResponse raw REST response from a HEAD operation
+     */
+    public ServiceResponse(Response<Void> headResponse) {
+        this.headResponse = headResponse;
     }
 
     /**
@@ -35,10 +60,29 @@ public class ServiceResponse<T> {
     }
 
     /**
+     * Sets the response object.
+     *
+     * @param body the response object.
+     */
+    public void setBody(T body) {
+        this.body = body;
+    }
+
+    /**
      * Gets the raw REST response.
+     *
      * @return the raw REST response.
      */
-    public Response getResponse() {
-        return this.response;
+    public Response<ResponseBody> getResponse() {
+        return response;
+    }
+
+    /**
+     * Gets the raw REST response from a HEAD operation.
+     *
+     * @return the raw REST response from a HEAD operation.
+     */
+    public Response<Void> getHeadResponse() {
+        return headResponse;
     }
 }

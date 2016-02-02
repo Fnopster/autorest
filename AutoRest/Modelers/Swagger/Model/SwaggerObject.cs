@@ -3,8 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Rest.Generator.ClientModel;
 using System.Globalization;
+using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Modeler.Swagger.Properties;
 
 namespace Microsoft.Rest.Modeler.Swagger.Model
@@ -100,9 +100,17 @@ namespace Microsoft.Rest.Modeler.Swagger.Model
                     {
                         return PrimaryType.DateTime;
                     }
+                    if (string.Equals("date-time-rfc1123", Format, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return PrimaryType.DateTimeRfc1123;
+                    }
                     if (string.Equals("byte", Format, StringComparison.OrdinalIgnoreCase))
                     {
                         return PrimaryType.ByteArray;
+                    }
+                    if (string.Equals("duration", Format, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return PrimaryType.TimeSpan;
                     }
                     return PrimaryType.String;
                 case DataType.Number:

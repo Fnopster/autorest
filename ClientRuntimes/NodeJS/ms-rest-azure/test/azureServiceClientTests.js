@@ -87,7 +87,7 @@ describe('AzureServiceClient', function () {
       }
     };
     
-    var client = new AzureServiceClient(credentials, { longRunningOperationRetryTimeoutInSeconds : 0 });
+    var client = new AzureServiceClient(credentials, { longRunningOperationRetryTimeout : 0 });
     client._getStatus = mockedGetStatus;
 
     describe('Put', function () {
@@ -105,7 +105,7 @@ describe('AzureServiceClient', function () {
         resultOfInitialRequest.response.headers['location'] = '';
         client.getPutOrPatchOperationResult(resultOfInitialRequest, function (err, result) {
           should.not.exist(err);
-          result.body.name.should.equal(testResourceName);
+          JSON.parse(result.body).name.should.equal(testResourceName);
           done();
         });
       });
@@ -120,7 +120,7 @@ describe('AzureServiceClient', function () {
         };
         client.getPutOrPatchOperationResult(resultOfInitialRequest, options, function (err, result) {
           should.not.exist(err);
-          result.body.name.should.equal(testResourceName);
+          JSON.parse(result.body).name.should.equal(testResourceName);
           result.response.testCustomField.should.equal(testCustomFieldValue);
           done();
         });
@@ -131,7 +131,7 @@ describe('AzureServiceClient', function () {
         resultOfInitialRequest.response.headers['location'] = urlFromLocationHeader_Return200;
         client.getPutOrPatchOperationResult(resultOfInitialRequest, function (err, result) {
           should.not.exist(err);
-          result.body.name.should.equal(testResourceName);
+          JSON.parse(result.body).name.should.equal(testResourceName);
           should.exist(result.response.randomFieldFromPollLocationHeader);
           done();
         });
@@ -182,7 +182,7 @@ describe('AzureServiceClient', function () {
         client.getPostOrDeleteOperationResult(resultOfInitialRequest, function (err, result) {
           should.not.exist(err);
           should.exist(result.response.randomFieldFromPollLocationHeader);
-          result.body.name.should.equal(testResourceName);
+          JSON.parse(result.body).name.should.equal(testResourceName);
           done();
         });
       });
@@ -215,7 +215,7 @@ describe('AzureServiceClient', function () {
       
       it('lro put does not throw if invalid json is received on polling', function (done) {
         var badResponseBody = '{';
-        var negativeClient = new AzureServiceClient(credentials, { longRunningOperationRetryTimeoutInSeconds : 0 });
+        var negativeClient = new AzureServiceClient(credentials, { longRunningOperationRetryTimeout : 0 });
         negativeClient.addFilter(mockFilter({ statusCode: 200, body: badResponseBody }, badResponseBody));
         resultOfInitialRequest.response.headers['azure-asyncoperation'] = '';
         resultOfInitialRequest.response.headers['location'] = urlFromLocationHeader_Return200;
@@ -230,7 +230,7 @@ describe('AzureServiceClient', function () {
       
       it('lro put does not throw if invalid json with single quote is received on polling', function (done) {
         var badResponseBody = '{\'"}';
-        var negativeClient = new AzureServiceClient(credentials, { longRunningOperationRetryTimeoutInSeconds : 0 });
+        var negativeClient = new AzureServiceClient(credentials, { longRunningOperationRetryTimeout : 0 });
         negativeClient.addFilter(mockFilter({ statusCode: 200, body: badResponseBody }, badResponseBody));
         resultOfInitialRequest.response.headers['azure-asyncoperation'] = '';
         resultOfInitialRequest.response.headers['location'] = urlFromLocationHeader_Return200;
@@ -245,7 +245,7 @@ describe('AzureServiceClient', function () {
       
       it('lro put does not throw if invalid json is received with invalid status code on polling', function (done) {
         var badResponseBody = '{';
-        var negativeClient = new AzureServiceClient(credentials, { longRunningOperationRetryTimeoutInSeconds : 0 });
+        var negativeClient = new AzureServiceClient(credentials, { longRunningOperationRetryTimeout : 0 });
         negativeClient.addFilter(mockFilter({ statusCode: 203, body: badResponseBody }, badResponseBody));
         resultOfInitialRequest.response.headers['azure-asyncoperation'] = '';
         resultOfInitialRequest.response.headers['location'] = urlFromLocationHeader_Return200;

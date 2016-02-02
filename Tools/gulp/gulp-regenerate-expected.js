@@ -42,6 +42,16 @@ function gulpRegenerateExpected(options, done) {
     gutil.log('opts.nsPrefix not set, so setting it to "Fixtures"');
   }
 
+  if(!opts.flatteningThreshold){
+    opts.flatteningThreshold = "0";
+    gutil.log('opts.flatteningThreshold not set, so setting it to "0"');
+  }
+
+  if(!opts.addCredentials){
+    opts.addCredentials = false;
+    gutil.log('opts.addCredentials not set, so setting it to "false"');
+  }
+
   var promises = Object.keys(opts.mappings).map(function(key) {
     var cmd = 'mono';
     var optsMappingsValue = opts.mappings[key];
@@ -50,10 +60,15 @@ function gulpRegenerateExpected(options, done) {
       'binaries/net45/AutoRest.exe',
       '-Modeler', opts.modeler,
       '-CodeGenerator', opts.codeGenerator,
+      '-PayloadFlatteningThreshold', opts.flatteningThreshold,
       '-OutputDirectory', path.join(opts.outputDir, key),
       '-Input', (!!opts.inputBaseDir ? path.join(opts.inputBaseDir, mappingBaseDir) : mappingBaseDir),
-      '-Header', (!!opts.header ? opts.header : 'MICROSOFT_MIT')
+      '-Header', (!!opts.header ? opts.header : 'MICROSOFT_MIT_NO_VERSION')
     ];
+
+    if (opts.addCredentials) {
+      args.push('-AddCredentials');
+    }
 
     if (!!opts.nsPrefix) {
       args.push('-Namespace');

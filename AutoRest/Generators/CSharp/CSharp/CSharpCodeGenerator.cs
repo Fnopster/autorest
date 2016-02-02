@@ -1,24 +1,32 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.IO;
+using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.CSharp.Templates;
-using System.IO;
-using System.Globalization;
+using System.Linq;
 
 namespace Microsoft.Rest.Generator.CSharp
 {
     public class CSharpCodeGenerator : CodeGenerator
     {
         private readonly CSharpCodeNamer _namer;
-        private const string ClientRuntimePackage = "Microsoft.Rest.ClientRuntime.1.2.0";
+        private const string ClientRuntimePackage = "Microsoft.Rest.ClientRuntime.2.0.0";
 
         public CSharpCodeGenerator(Settings settings) : base(settings)
         {
             _namer = new CSharpCodeNamer();
             IsSingleFileGenerationSupported = true;
         }
+
+        /// <summary>
+        /// Indicates whether ctor needs to be generated with internal protection level.
+        /// </summary>
+        [SettingsInfo("The namespace to use for generated code.")]
+        [SettingsAlias("internal")]
+        public bool InternalConstructors { get; set; }
 
         public override string Name
         {
@@ -51,6 +59,7 @@ namespace Microsoft.Rest.Generator.CSharp
         public override void NormalizeClientModel(ServiceClient serviceClient)
         {
             PopulateAdditionalProperties(serviceClient);
+            Extensions.NormalizeClientModel(serviceClient, Settings);
             _namer.NormalizeClientModel(serviceClient);
             _namer.ResolveNameCollisions(serviceClient, Settings.Namespace,
                 Settings.Namespace + ".Models");
@@ -63,11 +72,9 @@ namespace Microsoft.Rest.Generator.CSharp
                 serviceClient.Properties.Add(new Property
                 {
                     Name = "Credentials",
-                    Type = new CompositeType
-                    {
-                        Name = "ServiceClientCredentials"
-                    },
+                    Type = PrimaryType.Credentials,
                     IsRequired = true,
+                    IsReadOnly = true,
                     Documentation = "Subscription credentials which uniquely identify client subscription."
                 });
             }
@@ -83,7 +90,7 @@ namespace Microsoft.Rest.Generator.CSharp
             // Service client
             var serviceClientTemplate = new ServiceClientTemplate
             {
-                Model = new ServiceClientTemplateModel(serviceClient),
+                Model = new ServiceClientTemplateModel(serviceClient, InternalConstructors),
             };
             await Write(serviceClientTemplate, serviceClient.Name + ".cs");
 
@@ -97,7 +104,7 @@ namespace Microsoft.Rest.Generator.CSharp
             // Service client interface
             var serviceClientInterfaceTemplate = new ServiceClientInterfaceTemplate
             {
-                Model = new ServiceClientTemplateModel(serviceClient),
+                Model = new ServiceClientTemplateModel(serviceClient, InternalConstructors),
             };
             await Write(serviceClientInterfaceTemplate, "I" + serviceClient.Name + ".cs");
 
@@ -127,7 +134,7 @@ namespace Microsoft.Rest.Generator.CSharp
             }
 
             // Models
-            foreach (var model in serviceClient.ModelTypes)
+            foreach (var model in serviceClient.ModelTypes.Concat(serviceClient.HeaderTypes))
             {
                 var modelTemplate = new ModelTemplate
                 {
@@ -144,6 +151,16 @@ namespace Microsoft.Rest.Generator.CSharp
                     Model = new EnumTemplateModel(enumType),
                 };
                 await Write(enumTemplate, Path.Combine("Models", enumTemplate.Model.TypeDefinitionName + ".cs"));
+            }
+
+            // Exception
+            foreach (var exceptionType in serviceClient.ErrorTypes)
+            {
+                var exceptionTemplate = new ExceptionTemplate
+                {
+                    Model = new ModelTemplateModel(exceptionType),
+                };
+                await Write(exceptionTemplate, Path.Combine("Models", exceptionTemplate.Model.ExceptionTypeDefinitionName + ".cs"));
             }
         }
     }

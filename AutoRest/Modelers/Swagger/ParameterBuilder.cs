@@ -3,12 +3,11 @@
 
 using System;
 using System.Linq;
+using System.Globalization;
 using Microsoft.Rest.Generator.ClientModel;
 using Microsoft.Rest.Generator.Utilities;
 using Microsoft.Rest.Modeler.Swagger.Model;
 using ParameterLocation = Microsoft.Rest.Modeler.Swagger.Model.ParameterLocation;
-using System.Globalization;
-using System.Collections.Generic;
 
 namespace Microsoft.Rest.Modeler.Swagger
 {
@@ -53,6 +52,7 @@ namespace Microsoft.Rest.Modeler.Swagger
                 SerializedName = unwrappedParameter.Name,
                 Type = parameterType,
                 IsRequired = unwrappedParameter.IsRequired,
+                DefaultValue = unwrappedParameter.Default,
                 Location = (Generator.ClientModel.ParameterLocation)Enum.Parse(typeof(Generator.ClientModel.ParameterLocation), unwrappedParameter.In.ToString())
             };
             parameter.IsRequired = parameter.IsRequired || parameter.Location == Generator.ClientModel.ParameterLocation.Path;

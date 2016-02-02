@@ -25,10 +25,10 @@ describe('nodejs', function () {
     clientOptions.requestOptions = { jar: true };
     clientOptions.filters = [new msRest.ExponentialRetryPolicyFilter(3, 0, 0, 0)];
     clientOptions.noRetryPolicy = true;
-    clientOptions.longRunningOperationRetryTimeoutInSeconds = 0;
+    clientOptions.longRunningOperationRetryTimeout = 0;
 
     var testClient = new lroClient(credentials, baseUri, clientOptions);
-    var product = { Location: 'West US' };
+    var product = { location: 'West US' };
     it('should work with Put201CreatingSucceeded200', function (done) {
       testClient.lROs.put201CreatingSucceeded200(product, function (error, result) {
         should.not.exist(error);
@@ -69,7 +69,7 @@ describe('nodejs', function () {
     it('should work with PutNoHeaderInRetry', function (done) {
       testClient.lROs.putNoHeaderInRetry(product, function (error, result) {
         should.not.exist(error);
-        result.body.properties.provisioningState.should.be.exactly('Succeeded');
+        result.provisioningState.should.be.exactly('Succeeded');
         done();
       });
     });
@@ -77,7 +77,7 @@ describe('nodejs', function () {
     it('should work with PutAsyncNoHeaderInRetry', function (done) {
       testClient.lROs.putAsyncNoHeaderInRetry(product, function (error, result) {
         should.not.exist(error);
-        result.body.properties.provisioningState.should.be.exactly('Succeeded');
+        result.provisioningState.should.be.exactly('Succeeded');
         done();
       });
     });
@@ -85,7 +85,7 @@ describe('nodejs', function () {
     it('should work with PutSubResource', function (done) {
       testClient.lROs.putSubResource(product, function (error, result) {
         should.not.exist(error);
-        result.body.properties.provisioningState.should.be.exactly('Succeeded');
+        result.provisioningState.should.be.exactly('Succeeded');
         done();
       });
     });
@@ -93,7 +93,7 @@ describe('nodejs', function () {
     it('should work with PutAsyncSubResource', function (done) {
       testClient.lROs.putAsyncSubResource(product, function (error, result) {
         should.not.exist(error);
-        result.body.properties.provisioningState.should.be.exactly('Succeeded');
+        result.provisioningState.should.be.exactly('Succeeded');
         done();
       });
     });
@@ -104,8 +104,8 @@ describe('nodejs', function () {
         'id': 'doesNotMatter'
       }, function (error, result) {
         should.not.exist(error);
-        result.body.id.should.be.exactly('100');
-        result.body.name.should.be.exactly('sku');
+        result.id.should.be.exactly('100');
+        result.name.should.be.exactly('sku');
         done();
       });
     });
@@ -116,8 +116,8 @@ describe('nodejs', function () {
         'id': 'doesNotMatter'
       }, function (error, result) {
         should.not.exist(error);
-        result.body.id.should.be.exactly('100');
-        result.body.name.should.be.exactly('sku');
+        result.id.should.be.exactly('100');
+        result.name.should.be.exactly('sku');
         done();
       });
     });
@@ -143,7 +143,7 @@ describe('nodejs', function () {
     it('should work with put202Retry200', function (done) {
       testClient.lROs.put202Retry200(product, function (error, result) {
         should.not.exist(error);
-        result.body.id.should.be.exactly('100');
+        result.id.should.be.exactly('100');
         done();
       });
     });
@@ -151,7 +151,7 @@ describe('nodejs', function () {
     it('should work with Put200Succeeded', function (done) {
       testClient.lROs.put200Succeeded(product, function (error, result) {
         should.not.exist(error);
-        result.body.properties.provisioningState.should.be.exactly('Succeeded');
+        result.provisioningState.should.be.exactly('Succeeded');
         done();
       });
     });
@@ -159,7 +159,7 @@ describe('nodejs', function () {
     it('should work with Put200SucceededNoState', function (done) {
       testClient.lROs.put200SucceededNoState(product, function (error, result) {
         should.not.exist(error);
-        result.body.id.should.be.exactly('100');
+        result.id.should.be.exactly('100');
         done();
       });
     });
@@ -167,7 +167,7 @@ describe('nodejs', function () {
     it('should work with PutAsyncRetrySucceeded', function (done) {
       testClient.lROs.putAsyncRetrySucceeded(product, function (error, result) {
         should.not.exist(error);
-        result.body.properties.provisioningState.should.be.exactly('Succeeded');
+        result.provisioningState.should.be.exactly('Succeeded');
         done();
       });
     });
@@ -277,7 +277,7 @@ describe('nodejs', function () {
     it('should work with Post200WithPayload', function (done) {
       testClient.lROs.post200WithPayload(function (error, result) {
         should.not.exist(error);
-        result.body.id.should.equal(1);
+        result.id.should.equal(1);
         done();
       });
     });
@@ -285,7 +285,7 @@ describe('nodejs', function () {
     it('should work with PostAsyncRetrySucceeded', function (done) {
       testClient.lROs.postAsyncRetrySucceeded(product, function (error, result) {
         should.not.exist(error);
-        result.body.id.should.be.exactly('100');
+        result.id.should.be.exactly('100');
         done();
       });
     });
@@ -293,7 +293,7 @@ describe('nodejs', function () {
     it('should work with PostAsyncNoRetrySucceeded', function (done) {
       testClient.lROs.postAsyncNoRetrySucceeded(product, function (error, result) {
         should.not.exist(error);
-        result.body.id.should.be.exactly('100');
+        result.id.should.be.exactly('100');
         done();
       });
     });
@@ -309,8 +309,8 @@ describe('nodejs', function () {
     it('should work with PostAsyncRetryFailed', function (done) {
       testClient.lROs.postAsyncRetryFailed(product, function (error, result) {
         should.exist(error);
-        error.message.should.containEql('Long running operation failed with status: \'Failed\'');
-        var errObject = JSON.parse(error.body);
+        error.message.should.containEql('Long running operation failed with error: \'Internal Server Error\'.');
+        var errObject = error.body;
         errObject.error.code.should.be.exactly(500);
         errObject.error.message.should.be.exactly('Internal Server Error');
         done();
@@ -318,21 +318,21 @@ describe('nodejs', function () {
     });
 
     /** LRO Retrys **/
-    it('should work with Put201CreatingSucceeded200', function (done) {
+    it('retry should work with Put201CreatingSucceeded200', function (done) {
       testClient.lRORetrys.put201CreatingSucceeded200(product, function (error, result) {
         should.not.exist(error);
         done();
       });
     });
 
-    it('should work with PutAsyncRelativeRetrySucceeded', function (done) {
+    it('retry should work with PutAsyncRelativeRetrySucceeded', function (done) {
       testClient.lRORetrys.putAsyncRelativeRetrySucceeded(product, function (error, result) {
         should.not.exist(error);
         done();
       });
     });
 
-    it('should work with DeleteProvisioning202Accepted200Succeeded', function (done) {
+    it('retry should work with DeleteProvisioning202Accepted200Succeeded', function (done) {
       testClient.lRORetrys.deleteProvisioning202Accepted200Succeeded(function (error, result) {
         should.not.exist(error);
         done();
@@ -369,17 +369,18 @@ describe('nodejs', function () {
 
     it('should work with Custom Headers', function (done) {
       var options = {
+        product: product,
         customHeaders: {
           'x-ms-client-request-id': '9C4D50EE-2D56-4CD3-8152-34347DC9F2B0'
         }
       };
-      testClient.lROsCustomHeader.putAsyncRetrySucceeded(product, options, function (error, result) {
+      testClient.lROsCustomHeader.putAsyncRetrySucceeded(options, function (error, result) {
         should.not.exist(error);
-        testClient.lROsCustomHeader.postAsyncRetrySucceeded(product, options, function (error, result) {
+        testClient.lROsCustomHeader.postAsyncRetrySucceeded(options, function (error, result) {
           should.not.exist(error);
-          testClient.lROsCustomHeader.put201CreatingSucceeded200(product, options, function (error, result) {
+          testClient.lROsCustomHeader.put201CreatingSucceeded200(options, function (error, result) {
             should.not.exist(error);
-            testClient.lROsCustomHeader.post202Retry200(product, options, function (error, result) {
+            testClient.lROsCustomHeader.post202Retry200(options, function (error, result) {
               should.not.exist(error);
               done();
             });
@@ -395,15 +396,15 @@ describe('nodejs', function () {
     clientOptions.noRetryPolicy = true;
 
     var testClient = new lroClient(credentials, baseUri, clientOptions);
-    testClient.longRunningOperationRetryTimeout = 0.0001;
-    var product = { Location: 'West US' };
+    testClient.longRunningOperationRetryTimeout = 0;
+    var product = { location: 'West US' };
 
     //TODO: Port more C# test case over after 4103936 Fix exception type
 
     it('should throw on PutNonRetry400', function (done) {
       testClient.lROSADs.putNonRetry400(product, function (error, result) {
         should.exist(error);
-        error.message.should.containEql('{"message":"Expected bad request message","status":400}');
+        error.message.should.containEql('Expected bad request message');
         done();
       });
     });
@@ -491,14 +492,6 @@ describe('nodejs', function () {
 
     it('should throw on PutAsyncRelativeRetryNoStatus', function (done) {
       testClient.lROSADs.putAsyncRelativeRetryNoStatus(product, function (error, result) {
-        should.exist(error);
-        error.message.should.containEql('The response from long running operation does not contain a body.');
-        done();
-      });
-    });
-
-    it('should throw on PutAsyncRelativeRetryNoStatusPayload', function (done) {
-      testClient.lROSADs.putAsyncRelativeRetryNoStatusPayload(product, function (error, result) {
         should.exist(error);
         error.message.should.containEql('The response from long running operation does not contain a body.');
         done();

@@ -1,19 +1,17 @@
-﻿@using Microsoft.Rest.Generator.Java
+@using System
+@using Microsoft.Rest.Generator.Java
 @using Microsoft.Rest.Generator.Java.Templates
 @using Microsoft.Rest.Generator.Utilities
+@using Microsoft.Rest.Generator.Java.TemplateModels
 @using System.Linq;
 @inherits Microsoft.Rest.Generator.Template<Microsoft.Rest.Generator.Java.MethodGroupTemplateModel>
 /**
-@Header(" * ")
+@Header(" * ").TrimMultilineHeader()
  */
 @EmptyLine
 
 package @(Settings.Namespace.ToLower());
 @EmptyLine
-import com.microsoft.rest.ServiceCallback;
-import com.microsoft.rest.ServiceException;
-import com.microsoft.rest.ServiceResponseCallback;
-import retrofit.client.Response;
 @foreach (var importClass in Model.InterfaceImports)
 {
 @:import @importClass;
@@ -32,11 +30,16 @@ public interface @Model.MethodGroupType {
     interface @Model.MethodGroupServiceType {
     @foreach (var method in Model.MethodTemplateModels)
     {
-    @:    @@@(method.HttpMethod.ToString().ToUpper())("@(method.Url)")
-    @:    Response @(method.Name)(@method.MethodParameterApiDeclaration) throws ServiceException;
-    @EmptyLine
-    @:    @@@(method.HttpMethod.ToString().ToUpper())("@(method.Url)")
-    @:    void @(method.Name)Async(@method.MethodParameterApiDeclarationWithCallback);
+    @:    @@Headers("Content-Type: @method.RequestContentType")
+    if (method.HttpMethod == Microsoft.Rest.Generator.ClientModel.HttpMethod.Delete)
+    {
+    @:    @@HTTP(path = "@(method.Url.TrimStart('/'))", method = "DELETE", hasBody = true)
+    }
+    else
+    {
+    @:    @@@(method.HttpMethod.ToString().ToUpper())("@(method.Url.TrimStart('/'))")
+    }
+    @:    Call<@method.CallType> @(method.Name)(@method.MethodParameterApiDeclaration);
     @EmptyLine
     }
     }
@@ -44,31 +47,52 @@ public interface @Model.MethodGroupType {
     @foreach (var method in Model.MethodTemplateModels)
     {
     @:/**
-    @:@WrapComment(" * ", method.Documentation.EscapeXmlComment())
+    if (!String.IsNullOrEmpty(method.Summary))
+    {
+    @: * @method.Summary.EscapeXmlComment().Period()
+    }
+    if (!String.IsNullOrEmpty(method.Description))
+    {
+    @: * @method.Description.EscapeXmlComment().Period()
+    }
     @: *
     foreach (var param in method.LocalParameters)
     {
     @: * @@param @param.Name @((param.Documentation ?? "the " + param.Type.ToString() + " value").EscapeXmlComment())
     }
-    if (method.ReturnType != null)
+    foreach (var exception in method.ExceptionStatements)
     {
-    @: * @@return the @method.ReturnTypeString.EscapeXmlComment() object if successful.
+    @: * @@throws @exception
     }
-    @: * @@throws ServiceException the exception wrapped in ServiceException if failed.
+    if (method.ReturnType.Body != null)
+    {
+    @: * @@return the @method.ReturnTypeString.EscapeXmlComment() object wrapped in {@@link @method.OperationResponseType} if successful.
+    }
+    else
+    {
+    @: * @@return the {@@link @method.OperationResponseType} object if successful.
+    }
     @: */
-    @:@method.ReturnTypeString @(method.Name)(@method.MethodParameterDeclaration) throws ServiceException;
+    @:@method.OperationResponseReturnTypeString @(method.Name)(@method.MethodParameterDeclaration) throws @method.ExceptionString;
     @EmptyLine
     @:/**
-    @:@WrapComment(" * ", method.Documentation.EscapeXmlComment())
+    if (!String.IsNullOrEmpty(method.Summary))
+    {
+    @: * @method.Summary.EscapeXmlComment().Period()
+    }
+    if (!String.IsNullOrEmpty(method.Description))
+    {
+    @: * @method.Description.EscapeXmlComment().Period()
+    }
     @: *
     foreach (var param in method.LocalParameters)
     {
     @: * @@param @param.Name @((param.Documentation ?? "the " + param.Type.ToString() + " value").EscapeXmlComment())
     }
     @: * @@param serviceCallback the async ServiceCallback to handle successful and failed responses.
+    @: * @@return the {@@link Call} object
     @: */
-    @:void @(method.Name)Async(@method.MethodParameterDeclarationWithCallback);
+    @:Call<@method.CallType> @(method.Name)Async(@method.MethodParameterDeclarationWithCallback);
     @EmptyLine
     }
 }
-

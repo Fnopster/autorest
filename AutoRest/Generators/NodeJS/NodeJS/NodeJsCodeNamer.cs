@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Rest.Generator.ClientModel;
-using Microsoft.Rest.Generator.NodeJS.TemplateModels;
 using Microsoft.Rest.Generator.Utilities;
-using System.Globalization;
 
 namespace Microsoft.Rest.Generator.NodeJS
 {
@@ -158,14 +157,19 @@ namespace Microsoft.Rest.Generator.NodeJS
             }
         }
 
-        public override IType NormalizeType(IType type)
+        public override IType NormalizeTypeDeclaration(IType type)
+        {
+            return NormalizeTypeReference(type);
+        }
+
+        public override IType NormalizeTypeReference(IType type)
         {
             if (type == null)
             {
                 return null;
             }
             var enumType = type as EnumType;
-            if (enumType != null && enumType.IsExpandable)
+            if (enumType != null && enumType.ModelAsString)
             {
                 type = PrimaryType.String;
             }
@@ -203,6 +207,48 @@ namespace Microsoft.Rest.Generator.NodeJS
                 "Type {0} is not supported.", type.GetType()));
         }
 
+        /// <summary>
+        /// Normalize odata filter parameter to PrimaryType.String
+        /// </summary>
+        /// <param name="client">Service Client</param>
+        public void NormalizeOdataFilterParameter(ServiceClient client)
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException("client");
+            }
+
+            foreach(var method in client.Methods)
+            {
+                foreach(var parameter in method.Parameters)
+                {
+                    if (parameter.SerializedName.Equals("$filter",StringComparison.OrdinalIgnoreCase) &&
+                        parameter.Location == ParameterLocation.Query &&
+                        parameter.Type is CompositeType)
+                    {
+                        parameter.Type = PrimaryType.String;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Normalizes the method name if it is a reserved word in javascript.
+        /// </summary>
+        /// <param name="client">The service client.</param>
+        public void NormalizeMethodNames(ServiceClient client)
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException("client");
+            }
+
+            foreach (var method in client.Methods)
+            {
+                method.Name = GetMethodName(method.Name);
+            }
+        }
+
         private static IType NormalizeEnumType(EnumType enumType)
         {
             return enumType;
@@ -215,7 +261,7 @@ namespace Microsoft.Rest.Generator.NodeJS
             foreach (var property in compositeType.Properties)
             {
                 property.Name = GetPropertyName(property.Name);
-                property.Type = NormalizeType(property.Type);
+                property.Type = NormalizeTypeReference(property.Type);
             }
 
             return compositeType;
@@ -236,6 +282,10 @@ namespace Microsoft.Rest.Generator.NodeJS
                 primaryType.Name = "Date";
             }
             else if (primaryType == PrimaryType.DateTime)
+            {
+                primaryType.Name = "Date";
+            }
+            else if (primaryType == PrimaryType.DateTimeRfc1123)
             {
                 primaryType.Name = "Date";
             }
@@ -265,7 +315,7 @@ namespace Microsoft.Rest.Generator.NodeJS
             }
             else if (primaryType == PrimaryType.TimeSpan)
             {
-                primaryType.Name = "TimeSpan";
+                primaryType.Name = "moment.duration"; 
             }
             else if (primaryType == PrimaryType.Object)
             {
@@ -277,14 +327,14 @@ namespace Microsoft.Rest.Generator.NodeJS
 
         private IType NormalizeSequenceType(SequenceType sequenceType)
         {
-            sequenceType.ElementType = NormalizeType(sequenceType.ElementType);
+            sequenceType.ElementType = NormalizeTypeReference(sequenceType.ElementType);
             sequenceType.NameFormat = "Array";
             return sequenceType;
         }
 
         private IType NormalizeDictionaryType(DictionaryType dictionaryType)
         {
-            dictionaryType.ValueType = NormalizeType(dictionaryType.ValueType);
+            dictionaryType.ValueType = NormalizeTypeReference(dictionaryType.ValueType);
             dictionaryType.NameFormat = "Object";
             return dictionaryType;
         }

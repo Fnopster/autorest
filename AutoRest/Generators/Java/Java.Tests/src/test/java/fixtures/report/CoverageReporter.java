@@ -1,20 +1,16 @@
 package fixtures.report;
 
-import com.squareup.okhttp.OkHttpClient;
-import retrofit.RestAdapter;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CoverageReporter {
-    static AutoRestReportService client = new AutoRestReportServiceImpl(
-            "http://localhost:3000",
-            new OkHttpClient(),
-            new RestAdapter.Builder().setLogLevel(RestAdapter.LogLevel.NONE));
+public final class CoverageReporter {
+    private static AutoRestReportService client = new AutoRestReportServiceImpl("http://localhost:3000");
+
+    private CoverageReporter() { }
 
     public static void main(String[] args) throws Exception {
-        Map<String, Integer> report = client.getReport();
+        Map<String, Integer> report = client.getReport().getBody();
 
         // Body cannot be null
         report.put("putStringNull", 1);

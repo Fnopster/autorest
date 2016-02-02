@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Rest.Generator.Utilities;
@@ -23,8 +22,10 @@ namespace Microsoft.Rest.Generator.ClientModel
             Extensions = new Dictionary<string, object>();
             Properties = new List<Property>();
             Methods = new List<Method>();
-            ModelTypes = new List<CompositeType>();
-            EnumTypes = new List<EnumType>();
+            ModelTypes = new HashSet<CompositeType>();
+            EnumTypes = new HashSet<EnumType>();
+            ErrorTypes = new HashSet<CompositeType>();
+            HeaderTypes = new HashSet<CompositeType>();
         }
 
         /// <summary>
@@ -59,12 +60,22 @@ namespace Microsoft.Rest.Generator.ClientModel
         /// <summary>
         /// Gets the model types.
         /// </summary>
-        public IList<CompositeType> ModelTypes { get; private set; }
+        public ISet<CompositeType> ModelTypes { get; private set; }
 
         /// <summary>
         /// Gets the enum types.
         /// </summary>
-        public IList<EnumType> EnumTypes { get; private set; }
+        public ISet<EnumType> EnumTypes { get; private set; }
+
+        /// <summary>
+        /// Gets the list of error type for customize exceptions.
+        /// </summary>
+        public ISet<CompositeType> ErrorTypes { get; private set; }
+
+        /// <summary>
+        /// Gets the list of header types.
+        /// </summary>
+        public ISet<CompositeType> HeaderTypes { get; private set; }
 
         /// <summary>
         /// Gets the methods.

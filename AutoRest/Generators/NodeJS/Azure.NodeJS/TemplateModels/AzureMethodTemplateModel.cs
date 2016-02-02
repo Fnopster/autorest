@@ -3,11 +3,10 @@
 
 using System;
 using System.Linq;
+using System.Net;
 using Microsoft.Rest.Generator.ClientModel;
-using Microsoft.Rest.Generator.NodeJS.TemplateModels;
-using Microsoft.Rest.Generator.Utilities;
 using Microsoft.Rest.Generator.NodeJS;
-using Microsoft.Rest.Generator.Azure.NodeJS.Properties;
+using Microsoft.Rest.Generator.Utilities;
 
 namespace Microsoft.Rest.Generator.Azure.NodeJS
 {
@@ -16,14 +15,25 @@ namespace Microsoft.Rest.Generator.Azure.NodeJS
         public AzureMethodTemplateModel(Method source, ServiceClient serviceClient)
             : base(source, serviceClient)
         {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+            
+            this.ClientRequestIdString = AzureExtensions.GetClientRequestIdString(source);
+            this.RequestIdString = AzureExtensions.GetRequestIdString(source);
         }
+        
+        public string ClientRequestIdString { get; private set; }
+
+        public string RequestIdString { get; private set; }
 
         /// <summary>
         /// Returns true if method has x-ms-long-running-operation extension.
         /// </summary>
         public bool IsLongRunningOperation
         {
-            get { return Extensions.ContainsKey(AzureCodeGenerator.LongRunningExtension); }
+            get { return Extensions.ContainsKey(AzureExtensions.LongRunningExtension); }
         }
 
         /// <summary>
@@ -35,22 +45,19 @@ namespace Microsoft.Rest.Generator.Azure.NodeJS
             return base.HasQueryParameters() || !IsAbsoluteUrl;
         }
 
-        /// <summary>
-        /// Gets the expression for response body initialization 
-        /// </summary>
-        public override string InitializeResponseBody
+
+        public override string InitializeResult
         {
             get
             {
-                //result.requestId = result.httpRequest.headers['x-ms-request-id'];
                 var sb = new IndentedStringBuilder();
                 if (this.HttpMethod == HttpMethod.Head &&
-                    this.ReturnType != null)
+                    this.ReturnType.Body != null)
                 {
-                    sb.AppendLine("result.body = (statusCode === 204);");
+                    HttpStatusCode code = this.Responses.Keys.FirstOrDefault(AzureExtensions.HttpHeadStatusCodeSuccessFunc);
+                    sb.AppendFormat("result = (statusCode === {0});", (int)code).AppendLine();
                 }
-                sb.AppendLine("result.requestId = response.headers['x-ms-request-id'];")
-                    .AppendLine(base.InitializeResponseBody);
+
                 return sb.ToString();
             }
         }
@@ -63,9 +70,32 @@ namespace Microsoft.Rest.Generator.Azure.NodeJS
             get
             {
                 var sb = new IndentedStringBuilder();
-                sb.AppendLine("httpRequest.headers['x-ms-client-request-id'] = msRestAzure.generateUuid();")
+                sb.AppendLine("if ({0}.generateClientRequestId) {{", this.ClientReference).Indent()
+                    .AppendLine("httpRequest.headers['{0}'] = msRestAzure.generateUuid();", 
+                        this.ClientRequestIdString, this.ClientReference).Outdent()
+                  .AppendLine("}")
                   .AppendLine(base.SetDefaultHeaders);
                 return sb.ToString();
+            }
+        }
+
+        public string LongRunningOperationMethodNameInRuntime
+        {
+            get
+            {
+                string result = null;
+                if (this.IsLongRunningOperation)
+                {
+                    if (HttpMethod == HttpMethod.Post || HttpMethod == HttpMethod.Delete)
+                    {
+                        result = "getPostOrDeleteOperationResult";
+                    }
+                    else if (HttpMethod == HttpMethod.Put || HttpMethod == HttpMethod.Patch)
+                    {
+                        result = "getPutOrPatchOperationResult";
+                    }
+                }
+                return result;
             }
         }
     }
